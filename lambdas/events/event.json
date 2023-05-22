@@ -1,0 +1,8 @@
+{
+  "body": "{\"username\": \"player1\", \"number\": 45}",
+  "requestContext": {
+    "identity": {
+      "sourceIp": "123.123.123.123"
+    }
+  }
+}

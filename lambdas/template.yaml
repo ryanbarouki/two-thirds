@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: TwoThirds backend with Lambda functions and DynamoDB
+
+Resources:
+  GuessesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: TwoThirdsGuesses
+      AttributeDefinitions:
+        - AttributeName: username
+          AttributeType: S
+        - AttributeName: wins
+          AttributeType: N
+      KeySchema:
+        - AttributeName: username
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      GlobalSecondaryIndexes:
+        - IndexName: WinsIndex
+          KeySchema:
+            - AttributeName: wins
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+
+  SubmitGuessFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: index.submitGuess
+      Runtime: nodejs14.x
+      Environment:
+        Variables:
+          GUESSES_TABLE_NAME: !Ref GuessesTable
+      Events:
+        SubmitGuess:
+          Type: Api
+          Properties:
+            Path: /submit-guess
+            Method: post
+
+  GetLeaderboardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: index.getLeaderboard
+      Runtime: nodejs14.x
+      Environment:
+        Variables:
+          GUESSES_TABLE_NAME: !Ref GuessesTable
+      Events:
+        GetLeaderboard:
+          Type: Api
+          Properties:
+            Path: /leaderboard
+            Method: get
+
+  GetPreviousResultsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: index.getPreviousResults
+      Runtime: nodejs14.x
+      Environment:
+        Variables:
+          GUESSES_TABLE_NAME: !Ref GuessesTable
+      Events:
+        GetPreviousResults:
+          Type: Api
+          Properties:
+            Path: /previous-results
+            Method: get
+
+  EndGameFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: index.endGame
+      Runtime: nodejs14.x
+      Environment: 
+        Variables:
+          GUESSES_TABLE_NAME: !Ref GuessesTable
+      Events:
+        EndGame:
+          Type: Api
+          Properties:
+            Path: /end-game
+            Method: post
