@@ -3,31 +3,24 @@ Transform: AWS::Serverless-2016-10-31
 Description: TwoThirds backend with Lambda functions and DynamoDB
 
 Resources:
-  GuessesTable:
+
+  TwoThirdsGuessesTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: TwoThirdsGuesses
+      TableName: TwoThirdsDailyGuesses
       AttributeDefinitions:
         - AttributeName: username
           AttributeType: S
-        - AttributeName: wins
-          AttributeType: N
+        - AttributeName: timestamp
+          AttributeType: S
       KeySchema:
         - AttributeName: username
           KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
-      GlobalSecondaryIndexes:
-        - IndexName: WinsIndex
-          KeySchema:
-            - AttributeName: wins
-              KeyType: HASH
-          Projection:
-            ProjectionType: ALL
-          ProvisionedThroughput:
-            ReadCapacityUnits: 5
-            WriteCapacityUnits: 5
 
   SubmitGuessFunction:
     Type: AWS::Serverless::Function
@@ -37,7 +30,7 @@ Resources:
       Runtime: nodejs14.x
       Environment:
         Variables:
-          GUESSES_TABLE_NAME: !Ref GuessesTable
+          GUESSES_TABLE_NAME: !Ref TwoThirdsGuessesTable
       Events:
         SubmitGuess:
           Type: Api
@@ -53,7 +46,7 @@ Resources:
       Runtime: nodejs14.x
       Environment:
         Variables:
-          GUESSES_TABLE_NAME: !Ref GuessesTable
+          GUESSES_TABLE_NAME: !Ref TwoThirdsGuessesTable
       Events:
         GetLeaderboard:
           Type: Api
@@ -69,26 +62,10 @@ Resources:
       Runtime: nodejs14.x
       Environment:
         Variables:
-          GUESSES_TABLE_NAME: !Ref GuessesTable
+          GUESSES_TABLE_NAME: !Ref TwoThirdsGuessesTable
       Events:
         GetPreviousResults:
           Type: Api
           Properties:
             Path: /previous-results
             Method: get
-
-  EndGameFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: .
-      Handler: index.endGame
-      Runtime: nodejs14.x
-      Environment: 
-        Variables:
-          GUESSES_TABLE_NAME: !Ref GuessesTable
-      Events:
-        EndGame:
-          Type: Api
-          Properties:
-            Path: /end-game
-            Method: post

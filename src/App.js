@@ -4,6 +4,7 @@ import Leaderboard from './components/Leaderboard';
 import Results from './components/Results';
 import GlobalStyles from './styles/GlobalStyles';
 import { Container } from './styles/StyledComponents';
+import axios from 'axios';
 
 const App = () => {
   // Dummy data for demonstration purposes
@@ -21,9 +22,21 @@ const App = () => {
 
   const [userGuess, setUserGuess] = useState(null);
 
-  const handleSubmitGuess = (guess) => {
+  const handleSubmitGuess = async (username, guess) => {
     setUserGuess(guess);
-    // TODO: Submit the guess to the server
+    console.log(process.env.REACT_APP_SUBMIT_GUESS_API)
+    try {
+      const response = await axios.post(
+        process.env.REACT_APP_SUBMIT_GUESS_API,
+        {
+          username: username,
+          guess: guess,
+        }
+      );
+      console.log(response.data.message);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (

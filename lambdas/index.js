@@ -4,7 +4,7 @@ const dynamoDb = new AWS.DynamoDB.DocumentClient();
 exports.submitGuess = async (event) => {
   const { username, guess } = JSON.parse(event.body);
   const params = {
-    TableName: process.env.GUESSES_TABLE_NAME,
+    TableName: 'TwoThirdsDailyGuesses',
     Item: { username, guess, timestamp: new Date().toISOString() },
   };
 
@@ -12,26 +12,55 @@ exports.submitGuess = async (event) => {
 
   return {
     statusCode: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*", // Or specify your frontend domain
+      "Access-Control-Allow-Credentials": true,
+    },
     body: JSON.stringify({ message: 'Guess submitted successfully' }),
   };
 };
 
 exports.getLeaderboard = async (event) => {
   // Query DynamoDB for leaderboard data
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayString = yesterday.toISOString().split('T')[0];
+
   const params = {
-    TableName: process.env.GUESSES_TABLE_NAME,
-    IndexName: 'WinsIndex',
-    KeyConditionExpression: 'wins > :wins',
-    ExpressionAttributeValues: { ':wins': 0 },
-    ScanIndexForward: false,
+    TableName: 'TwoThirdsDailyGuesses',
+    FilterExpression: 'begins_with(timestamp, :date)',
+    ExpressionAttributeValues: {
+      ':date': yesterdayString,
+    },
   };
 
-  const result = await dynamoDb.query(params).promise();
+  try {
+    const data = await dynamoDb.scan(params).promise();
+    const guessItems = data.Items;
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify(result.Items),
-  };
+    const averageGuess = guessItems.reduce((total, item) => total + item.guess, 0) / guessItems.length;
+    const target = averageGuess * (2 / 3);
+
+    guessItems.forEach(item => {
+      item.distance = Math.abs(target - item.guess);
+    });
+
+    // Sort users by their distance to the target, in ascending order
+    guessItems.sort((a, b) => a.distance - b.distance);
+
+    // Extract leaderboard information (top 10)
+    const leaderboard = guessItems.slice(0, 10).map(item => ({ username: item.username, guess: item.guess, distance: item.distance }));
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(leaderboard),
+    };
+  } catch (error) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Could not retrieve leaderboard' }),
+    };
+  }
 };
 
 exports.getPreviousResults = async (event) => {
@@ -40,7 +69,7 @@ exports.getPreviousResults = async (event) => {
   yesterday.setDate(yesterday.getDate() - 1);
 
   const params = {
-    TableName: process.env.GUESSES_TABLE_NAME,
+    TableName: 'TwoThirdsDailyGuesses',
     KeyConditionExpression: 'timestamp = :yesterday',
     ExpressionAttributeValues: { ':yesterday': yesterday.toISOString() },
   };
@@ -55,39 +84,5 @@ exports.getPreviousResults = async (event) => {
       averageGuess,
       target: averageGuess * 2 / 3,
     }),
-  };
-};
-
-exports.endGame = async (event) => {
-  // Assume event.body contains an array of all the game guesses
-  const guesses = JSON.parse(event.body);
-  const averageGuess = guesses.reduce((a, b) => a + b, 0) / guesses.length;
-  const target = averageGuess * 2 / 3;
-
-  let winner = null;
-  let smallestDifference = Infinity;
-  for (let guess of guesses) {
-    let difference = Math.abs(guess.number - target);
-    if (difference < smallestDifference) {
-      smallestDifference = difference;
-      winner = guess.username;
-    }
-  }
-
-  const params = {
-    TableName: process.env.GUESSES_TABLE_NAME,
-    Key: { username: winner },
-    UpdateExpression: "ADD wins :inc",
-    ExpressionAttributeValues: {
-      ":inc": 1
-    },
-    ReturnValues: "UPDATED_NEW"
-  };
-
-  await dynamoDb.update(params).promise();
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ message: 'Game ended', winner })
   };
 };
