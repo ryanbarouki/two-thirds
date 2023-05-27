@@ -9,7 +9,7 @@ const Leaderboard = ({ leaderboardData }) => {
   // ...
   return (
     <div>
-      <SectionTitle>Leaderboard</SectionTitle>
+      <SectionTitle>Yesterday's Leaderboard</SectionTitle>
       <Table>
         <thead>
           <tr>

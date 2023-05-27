@@ -1,4 +1,3 @@
 # TODO
-- Create a user login to tie scores to usernames
-- Call lambdas via API gateway from frontend (requires username etc)
+- use username stored in local storage to fetch user's yesterday guess and leaderboard position (if exists)
 - Improve styling

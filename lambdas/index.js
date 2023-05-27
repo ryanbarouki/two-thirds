@@ -1,10 +1,12 @@
 const AWS = require('aws-sdk');
+
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
+const GUESS_TABLE_NAME = 'TwoThirdsGuesses';
 
 exports.submitGuess = async (event) => {
   const { username, guess } = JSON.parse(event.body);
   const params = {
-    TableName: 'TwoThirdsDailyGuesses',
+    TableName: GUESS_TABLE_NAME,
     Item: { username, guess, timestamp: new Date().toISOString() },
   };
 
@@ -27,7 +29,7 @@ exports.getLeaderboard = async (event) => {
   const yesterdayString = yesterday.toISOString().split('T')[0];
 
   const params = {
-    TableName: 'TwoThirdsDailyGuesses',
+    TableName: GUESS_TABLE_NAME,
     FilterExpression: 'begins_with(timestamp, :date)',
     ExpressionAttributeValues: {
       ':date': yesterdayString,
@@ -58,28 +60,44 @@ exports.getLeaderboard = async (event) => {
   } catch (error) {
     return {
       statusCode: 500,
+      headers: {
+        "Access-Control-Allow-Origin": "*", // Or specify your frontend domain
+        "Access-Control-Allow-Credentials": true,
+      },
       body: JSON.stringify({ error: 'Could not retrieve leaderboard' }),
     };
   }
 };
 
-exports.getPreviousResults = async (event) => {
-  // Query DynamoDB for previous day's results
+exports.getPreviousResults = async () => {
+  // Generate date string for yesterday
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayDateString = yesterday.toISOString().split('T')[0];
 
+
+  // Scan the entire table and filter items based on the 'timestamp' attribute
   const params = {
-    TableName: 'TwoThirdsDailyGuesses',
-    KeyConditionExpression: 'timestamp = :yesterday',
-    ExpressionAttributeValues: { ':yesterday': yesterday.toISOString() },
+    TableName: 'TwoThirdsGuesses',
+    FilterExpression: 'begins_with(#ts, :yesterday)',
+    ExpressionAttributeNames: {
+      '#ts': 'timestamp',
+    },
+    ExpressionAttributeValues: {
+      ':yesterday': yesterdayDateString,
+    },
   };
 
-  const result = await dynamoDb.query(params).promise();
+  const result = await dynamoDb.scan(params).promise();
   const guesses = result.Items.map((item) => item.guess);
   const averageGuess = guesses.reduce((a, b) => a + b, 0) / guesses.length;
 
   return {
     statusCode: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*", // Or specify your frontend domain
+      "Access-Control-Allow-Credentials": true,
+    },
     body: JSON.stringify({
       averageGuess,
       target: averageGuess * 2 / 3,

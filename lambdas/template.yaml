@@ -4,20 +4,16 @@ Description: TwoThirds backend with Lambda functions and DynamoDB
 
 Resources:
 
-  TwoThirdsGuessesTable:
+  TwoThirdsTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: TwoThirdsDailyGuesses
+      TableName: TwoThirdsGuesses
       AttributeDefinitions:
-        - AttributeName: username
-          AttributeType: S
         - AttributeName: timestamp
           AttributeType: S
       KeySchema:
-        - AttributeName: username
-          KeyType: HASH
         - AttributeName: timestamp
-          KeyType: RANGE
+          KeyType: HASH
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
@@ -30,7 +26,7 @@ Resources:
       Runtime: nodejs14.x
       Environment:
         Variables:
-          GUESSES_TABLE_NAME: !Ref TwoThirdsGuessesTable
+          GUESSES_TABLE_NAME: !Ref TwoThirdsTable
       Events:
         SubmitGuess:
           Type: Api
@@ -46,7 +42,7 @@ Resources:
       Runtime: nodejs14.x
       Environment:
         Variables:
-          GUESSES_TABLE_NAME: !Ref TwoThirdsGuessesTable
+          GUESSES_TABLE_NAME: !Ref TwoThirdsTable
       Events:
         GetLeaderboard:
           Type: Api
@@ -62,7 +58,7 @@ Resources:
       Runtime: nodejs14.x
       Environment:
         Variables:
-          GUESSES_TABLE_NAME: !Ref TwoThirdsGuessesTable
+          GUESSES_TABLE_NAME: !Ref TwoThirdsTable
       Events:
         GetPreviousResults:
           Type: Api

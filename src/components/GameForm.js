@@ -1,8 +1,15 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Form, Label, Input, Button } from '../styles/StyledComponents';
+import { DateTime } from 'luxon';
+import { saveUsername } from '../save_local';
+
+const getDayString = () => {
+  return DateTime.now().toFormat("yyyy-MM-dd");
+};
 
 const GameForm = ({ onSubmit }) => {
   // ...
+  const dayString = useMemo(getDayString, []);
   const [guess, setGuess] = useState('');
   const [username, setUsername] = useState('');
 
@@ -11,6 +18,7 @@ const GameForm = ({ onSubmit }) => {
     onSubmit(username, parseInt(guess, 10));
     setGuess('');
     setUsername('');
+    saveUsername(dayString, username);
   };
 
   return (
@@ -35,7 +43,7 @@ const GameForm = ({ onSubmit }) => {
         onChange={(e) => setGuess(e.target.value)}
         required
       />
-      <Button type="submit">Submit Your Guess</Button>
+      <Button type="submit">Submit Today's Guess</Button>
     </Form>
   );
 };

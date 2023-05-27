@@ -4,7 +4,7 @@ const Results = ({ previousDayResults, userGuess }) => {
   // ...
   return (
     <div>
-      <SectionTitle>Results</SectionTitle>
+      <SectionTitle>Yesterday's Results</SectionTitle>
       <p>Average Guess: {previousDayResults.averageGuess}</p>
       <p>2/3 Target: {previousDayResults.target}</p>
       <p>Winner's Guess: {previousDayResults.winnerGuess}</p>
