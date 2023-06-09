@@ -1,11 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Form, Label, Input, Button } from '../styles/StyledComponents';
-import { DateTime } from 'luxon';
-import { saveUsername } from '../save_local';
+import { saveUsername, getDayString } from '../save_local';
 
-const getDayString = () => {
-  return DateTime.now().toFormat("yyyy-MM-dd");
-};
 
 const GameForm = ({ onSubmit }) => {
   // ...

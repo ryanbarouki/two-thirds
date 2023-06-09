@@ -50,7 +50,7 @@ Resources:
             Path: /leaderboard
             Method: get
 
-  GetPreviousResultsFunction:
+  GetPreviousResultsFunction2:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: .
@@ -64,4 +64,4 @@ Resources:
           Type: Api
           Properties:
             Path: /previous-results
-            Method: get
+            Method: post

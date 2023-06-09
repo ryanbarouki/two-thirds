@@ -5,12 +5,14 @@ import Results from './components/Results';
 import GlobalStyles from './styles/GlobalStyles';
 import { Container } from './styles/StyledComponents';
 import axios from 'axios';
+import { getYesterdaysUsername } from './save_local';
 
 const App = () => {
   const [previousDayResults, setPreviousDayResults] = useState({
-    averageGuess: 50,
-    target: 33,
-    winnerGuess: 32,
+    averageGuess: 'No data',
+    target: 'No data',
+    winnerGuess: 'No data',
+    userGuess: 'No data'
   });
 
   const [userGuess, setUserGuess] = useState(null);
@@ -23,7 +25,10 @@ const App = () => {
 
   useEffect(() => {
       const fetchPrevResults = async () => {
-        axios.get(process.env.REACT_APP_API_ENDPOINT + 'previous-results')
+        axios.post(process.env.REACT_APP_API_ENDPOINT + 'previous-results',
+        {
+          username: getYesterdaysUsername()
+        })
         .then(response => setPreviousDayResults(response.data))
         .catch(error => console.error('There was an error!', error));
       };
@@ -56,9 +61,7 @@ const App = () => {
         <GameForm onSubmit={handleSubmitGuess} />
         <Results
           previousDayResults={previousDayResults}
-          userGuess={userGuess}
         />
-        <Leaderboard leaderboardData={leaderboardData} />
       </Container>
     </>
   );

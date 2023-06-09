@@ -69,28 +69,31 @@ exports.getLeaderboard = async (event) => {
   }
 };
 
-exports.getPreviousResults = async () => {
+exports.getPreviousResults = async (event) => {
+  // Parse the username from the event body
+  const { username } = JSON.parse(event.body);
+
   // Generate date string for yesterday
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayDateString = yesterday.toISOString().split('T')[0];
 
-
   // Scan the entire table and filter items based on the 'timestamp' attribute
   const params = {
     TableName: 'TwoThirdsGuesses',
-    FilterExpression: 'begins_with(#ts, :yesterday)',
+    FilterExpression: 'begins_with(#ts, :yesterday) AND username = :username',
     ExpressionAttributeNames: {
       '#ts': 'timestamp',
     },
     ExpressionAttributeValues: {
       ':yesterday': yesterdayDateString,
+      ':username': username,
     },
   };
 
   const result = await dynamoDb.scan(params).promise();
-  const guesses = result.Items.map((item) => item.guess);
-  const averageGuess = guesses.reduce((a, b) => a + b, 0) / guesses.length;
+  const userGuess = result.Items[0]?.guess || null;
+  const averageGuess = result.Items.reduce((a, b) => a.guess + b.guess, 0) / result.Items.length;
 
   return {
     statusCode: 200,
@@ -101,6 +104,7 @@ exports.getPreviousResults = async () => {
     body: JSON.stringify({
       averageGuess,
       target: averageGuess * 2 / 3,
+      userGuess,
     }),
   };
 };
