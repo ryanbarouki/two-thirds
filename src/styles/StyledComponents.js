@@ -83,9 +83,3 @@ export const SectionTitle = styled.h2`
   margin-top: 3rem;
   margin-bottom: 1rem;
 `;
-
-export const Result = styled.span`
-  font-weight: 700;
-  font-size: 1.5em;
-  color: var(--primary-logo);
-`;

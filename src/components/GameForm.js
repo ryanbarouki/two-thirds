@@ -11,7 +11,7 @@ const GameForm = ({ onSubmit }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(username, parseInt(guess, 10));
+    onSubmit(username, parseFloat(guess, 10));
     setGuess('');
     setUsername('');
     saveUsername(dayString, username);
@@ -35,6 +35,7 @@ const GameForm = ({ onSubmit }) => {
         value={guess}
         min="0"
         max="100"
+        step="0.01"
         onChange={(e) => setGuess(e.target.value)}
         required
         placeholder='Enter your guess'

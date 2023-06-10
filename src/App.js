@@ -5,6 +5,7 @@ import Results from './components/Results';
 import { Container, Title } from './styles/StyledComponents';
 import axios from 'axios';
 import { getYesterdaysUsername } from './save_local';
+import CountdownTimer from './components/CountdownTimer';
 
 const App = () => {
   const [previousDayResults, setPreviousDayResults] = useState({
@@ -21,6 +22,9 @@ const App = () => {
     { username: 'player2', wins: 3 },
     { username: 'player3', wins: 2 },
   ]);
+
+  const timeToMidnight = new Date();
+  timeToMidnight.setUTCHours(24,0,0,0);
 
   useEffect(() => {
       const fetchPrevResults = async () => {
@@ -57,6 +61,7 @@ const App = () => {
       <Container>
         <Title>2/3</Title>
         <GameForm onSubmit={handleSubmitGuess} />
+        <CountdownTimer targetDate={timeToMidnight.getTime()} />
         <Results
           previousDayResults={previousDayResults}
         />
