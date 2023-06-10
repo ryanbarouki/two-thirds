@@ -1,14 +1,14 @@
-import { SectionTitle } from '../styles/StyledComponents';
+import { SectionTitle, Result } from '../styles/StyledComponents';
 
 const Results = ({ previousDayResults }) => {
   // ...
   return (
     <div>
       <SectionTitle>Yesterday's Results</SectionTitle>
-      <p>Average Guess: {previousDayResults.averageGuess ?? "🤔"}</p>
-      <p>2/3 Target: {previousDayResults.target ?? "🤔"}</p>
-      <p>Winner's Guess: {previousDayResults.winnerGuess ?? "🤔"}</p>
-      <p>Your Guess: {previousDayResults.userGuess ?? "🤔"}</p>
+      <p>Average Guess: <Result>{previousDayResults.averageGuess ?? "🤔"}</Result></p>
+      <p>2/3 Target: <Result>{previousDayResults.target ?? "🤔"}</Result></p>
+      <p>Winner's Guess: <Result>{previousDayResults.winnerGuess ?? "🤔"}</Result></p>
+      <p>Your Guess: <Result>{previousDayResults.userGuess ?? "🤔"}</Result></p>
     </div>
   );
 };

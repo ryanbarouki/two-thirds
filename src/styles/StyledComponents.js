@@ -2,13 +2,20 @@ import styled from 'styled-components';
 
 export const Container = styled.div`
   display: flex;
+  gap: 1em;
   flex-direction: column;
   align-items: center;
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
   background-color: #fff;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+  background-color: var(--primary-background);
+`;
+
+export const Title = styled.div`
+  font-weight: 700;
+  font-size: 4em;
+  color: var(--primary-logo);
 `;
 
 export const Form = styled.form`
@@ -29,7 +36,14 @@ export const Input = styled.input`
   padding: 0.5rem;
   margin-bottom: 1rem;
   font-size: 1rem;
-  border: 1px solid #ccc;
+  border: 0px;
+  background-color: var(--primary-input);
+  border-radius: 0.25em;
+  font-family: 'Quicksand';
+
+  &:focus {
+    outline: none;
+  }
 `;
 
 export const Button = styled.button`
@@ -40,9 +54,11 @@ export const Button = styled.button`
   border: none;
   border-radius: 0.25rem;
   cursor: pointer;
+  font-family: 'Quicksand';
+  background-color: var(--primary-button-unpressed);
 
-  &:hover {
-    background-color: #0056b3;
+  &:active {
+    background-color: var(--primary-button-pressed);
   }
 `;
 
@@ -66,4 +82,10 @@ export const TableCell = styled.td`
 export const SectionTitle = styled.h2`
   margin-top: 3rem;
   margin-bottom: 1rem;
+`;
+
+export const Result = styled.span`
+  font-weight: 700;
+  font-size: 1.5em;
+  color: var(--primary-logo);
 `;

@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import GameForm from './components/GameForm';
 import Leaderboard from './components/Leaderboard';
 import Results from './components/Results';
-import GlobalStyles from './styles/GlobalStyles';
-import { Container } from './styles/StyledComponents';
+import { Container, Title } from './styles/StyledComponents';
 import axios from 'axios';
 import { getYesterdaysUsername } from './save_local';
 
@@ -55,9 +54,8 @@ const App = () => {
 
   return (
     <>
-      <GlobalStyles />
       <Container>
-        <h1>TwoThirds</h1>
+        <Title>2/3</Title>
         <GameForm onSubmit={handleSubmitGuess} />
         <Results
           previousDayResults={previousDayResults}

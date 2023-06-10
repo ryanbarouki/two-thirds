@@ -19,16 +19,15 @@ const GameForm = ({ onSubmit }) => {
 
   return (
     <Form onSubmit={handleSubmit}>
-      <Label htmlFor="username">Enter a username:</Label>
       <Input
         type="text"
         id="username"
         name="username"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
+        placeholder='Enter a username'
         required
       />
-      <Label htmlFor="guess">Enter your guess (0-100):</Label>
       <Input
         type="number"
         id="guess"
@@ -38,8 +37,9 @@ const GameForm = ({ onSubmit }) => {
         max="100"
         onChange={(e) => setGuess(e.target.value)}
         required
+        placeholder='Enter your guess'
       />
-      <Button type="submit">Submit Today's Guess</Button>
+      <Button type="submit">Guess!</Button>
     </Form>
   );
 };

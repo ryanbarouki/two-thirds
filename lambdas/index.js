@@ -81,19 +81,30 @@ exports.getPreviousResults = async (event) => {
   // Scan the entire table and filter items based on the 'timestamp' attribute
   const params = {
     TableName: 'TwoThirdsGuesses',
-    FilterExpression: 'begins_with(#ts, :yesterday) AND username = :username',
+    FilterExpression: 'begins_with(#ts, :yesterday)',
     ExpressionAttributeNames: {
       '#ts': 'timestamp',
     },
     ExpressionAttributeValues: {
       ':yesterday': yesterdayDateString,
-      ':username': username,
     },
   };
 
   const result = await dynamoDb.scan(params).promise();
-  const userGuess = result.Items[0]?.guess || null;
-  const averageGuess = result.Items.reduce((a, b) => a.guess + b.guess, 0) / result.Items.length;
+  const userGuess = result.Items.find(item => item.username === username)?.guess || null;
+  const averageGuess = result.Items.reduce((a, b) => a + b.guess, 0) / result.Items.length;
+  const target = averageGuess * 2 / 3;
+
+  // Find the user guess that is closest to the target
+  let closestGuess = null;
+  let smallestDifference = Infinity;
+  result.Items.forEach(item => {
+    const difference = Math.abs(item.guess - target);
+    if (difference < smallestDifference) {
+      smallestDifference = difference;
+      closestGuess = item;
+    }
+  });
 
   return {
     statusCode: 200,
@@ -102,9 +113,10 @@ exports.getPreviousResults = async (event) => {
       "Access-Control-Allow-Credentials": true,
     },
     body: JSON.stringify({
-      averageGuess,
-      target: averageGuess * 2 / 3,
-      userGuess,
+      averageGuess: averageGuess.toFixed(2),
+      target: target.toFixed(2),
+      userGuess: userGuess.toFixed(2),
+      winnerGuess: closestGuess.guess.toFixed(2),
     }),
   };
 };
