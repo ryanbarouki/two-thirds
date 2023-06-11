@@ -33,7 +33,7 @@ exports.submitGuess = async (event) => {
         "Access-Control-Allow-Origin": "*", // Or specify your frontend domain
         "Access-Control-Allow-Credentials": true,
       },
-      body: JSON.stringify({ message: 'You have already made a guess today' }),
+      body: JSON.stringify({ message: 'That username is taken!' }),
     };
   }
 

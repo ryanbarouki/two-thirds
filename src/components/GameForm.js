@@ -9,12 +9,13 @@ const GameForm = ({ onSubmit }) => {
   const [guess, setGuess] = useState('');
   const [username, setUsername] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(username, parseFloat(guess, 10));
-    setGuess('');
-    setUsername('');
-    saveUsername(dayString, username);
+    if (await onSubmit(username, parseFloat(guess, 10)) === true) {
+      setGuess('');
+      setUsername('');
+      saveUsername(dayString, username);
+    }
   };
 
   return (

@@ -8,6 +8,8 @@ import { getYesterdaysUsername, getTodaysUsername } from './save_local';
 import CountdownTimer from './components/CountdownTimer';
 import { getNextOccurrence } from './utils';
 import styled from 'styled-components';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Subheader = styled.div`
   font-weight: 400;
@@ -28,6 +30,7 @@ const App = () => {
 
   const [userGuess, setUserGuess] = useState(null);
   const [timeToNext, setTimeToNext] = useState(getNextOccurrence(24));
+  const [submitted, setSubmitted] = useState(getTodaysUsername() !== '');
 
   const [leaderboardData] = useState([
     { username: 'player1', wins: 5 },
@@ -65,27 +68,33 @@ const App = () => {
           guess: guess,
         }
       );
-      console.log(response.data.message);
+      toast.success(response.data.message);
+      setSubmitted(true);
+      return true;
     } catch (error) {
-      console.error(error);
+      toast.error(error.response.data.message);
+      return false;
     }
   };
 
   return (
     <>
+    <ToastContainer 
+      position='top-center'
+    />
       <Container>
         <Title>2/3</Title>
 
         {
-          getTodaysUsername() === '' ?
+          submitted ?
 
-            <GameForm onSubmit={handleSubmitGuess} />
-            :
             <SubmittedContainer>
               <Subheader>Come back in</Subheader>
               <CountdownTimer targetDate={timeToNext.getTime()} handleCountdownEnd={handleCountdownEnd} />
               <Subheader>to see your score and play again!</Subheader>
             </SubmittedContainer>
+            :
+            <GameForm onSubmit={handleSubmitGuess} />
         }
 
         <Results
