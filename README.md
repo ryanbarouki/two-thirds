@@ -1,6 +1,7 @@
 # TODO
 - Improve styling
     - hide yesterday's scores under dropdown
+    - icons and logo
 - make the guess input a slider? Not sure
 - add loading markers before data has been fetched - not crucial but nice
 - leaderboard page
