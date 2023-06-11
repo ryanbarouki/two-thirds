@@ -48,7 +48,6 @@ const App = () => {
         .catch(error => console.error('There was an error!', error));
       };
       fetchPrevResults();
-      console.log("fetching prev results");
     },
   [timeToNext]);
 
@@ -58,7 +57,6 @@ const App = () => {
 
   const handleSubmitGuess = async (username, guess) => {
     setUserGuess(guess);
-    console.log(process.env.REACT_APP_API_ENDPOINT + '/submit-guess')
     try {
       const response = await axios.post(
         process.env.REACT_APP_API_ENDPOINT + '/submit-guess',
