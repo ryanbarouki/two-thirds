@@ -1,6 +1,7 @@
 import React from 'react';
 import { useCountdown } from '../hooks/useCountdown';
 import styled from 'styled-components';
+import { useEffect } from 'react';
 
 const TimerContainer = styled.div`
   line-height: 1.25rem;
@@ -11,6 +12,7 @@ const TimerContainer = styled.div`
   flex-direction: row;
   text-decoration: none;
   gap: 1rem;
+  color: var(--secondary-text);
 `;
 
 const StyledDateTimeDisplay = styled.div`
@@ -41,8 +43,14 @@ const ShowCounter = ({ days, hours, minutes, seconds }) => {
   );
 };
 
-const CountdownTimer = ({ targetDate }) => {
+const CountdownTimer = ({ targetDate, handleCountdownEnd }) => {
   const [days, hours, minutes, seconds] = useCountdown(targetDate);
+
+  useEffect(() => {
+    if (days + hours + minutes + seconds <= 0) {
+      handleCountdownEnd();
+    }
+  }, [seconds]);
 
   return (
     <ShowCounter

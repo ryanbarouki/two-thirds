@@ -20,7 +20,7 @@ const TableValue = styled.td`
   padding: 8px;
   font-weight: 700;
   font-size: 1.5em;
-  color: var(--primary-logo);
+  color: var(--secondary-text);
 `;
 
 

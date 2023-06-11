@@ -21,6 +21,11 @@ export const getYesterdaysUsername = () => {
     return loadUsernames()[yesterday] ?? '';
 };
 
+export const getTodaysUsername = () => {
+    const today = DateTime.now().toFormat("yyyy-MM-dd");
+    return loadUsernames()[today] ?? '';
+};
+
 export const getDayString = () => {
   return DateTime.now().toFormat("yyyy-MM-dd");
 };

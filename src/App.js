@@ -1,11 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import GameForm from './components/GameForm';
 import Leaderboard from './components/Leaderboard';
 import Results from './components/Results';
 import { Container, Title } from './styles/StyledComponents';
 import axios from 'axios';
-import { getYesterdaysUsername } from './save_local';
+import { getYesterdaysUsername, getTodaysUsername } from './save_local';
 import CountdownTimer from './components/CountdownTimer';
+import { getNextOccurrence } from './utils';
+import styled from 'styled-components';
+
+const Subheader = styled.div`
+  font-weight: 400;
+  font-size: 1.2rem;
+`;
+
+const SubmittedContainer = styled(Container)`
+  gap: 0.5rem;
+`;
 
 const App = () => {
   const [previousDayResults, setPreviousDayResults] = useState({
@@ -16,6 +27,7 @@ const App = () => {
   });
 
   const [userGuess, setUserGuess] = useState(null);
+  const [timeToNext, setTimeToNext] = useState(getNextOccurrence(24));
 
   const [leaderboardData] = useState([
     { username: 'player1', wins: 5 },
@@ -23,8 +35,6 @@ const App = () => {
     { username: 'player3', wins: 2 },
   ]);
 
-  const timeToMidnight = new Date();
-  timeToMidnight.setUTCHours(24,0,0,0);
 
   useEffect(() => {
       const fetchPrevResults = async () => {
@@ -36,8 +46,13 @@ const App = () => {
         .catch(error => console.error('There was an error!', error));
       };
       fetchPrevResults();
+      console.log("fetching prev results");
     },
-  []);
+  [timeToNext]);
+
+  const handleCountdownEnd = () => {
+    setTimeToNext(getNextOccurrence(24));
+  };
 
   const handleSubmitGuess = async (username, guess) => {
     setUserGuess(guess);
@@ -60,8 +75,19 @@ const App = () => {
     <>
       <Container>
         <Title>2/3</Title>
-        <GameForm onSubmit={handleSubmitGuess} />
-        <CountdownTimer targetDate={timeToMidnight.getTime()} />
+
+        {
+          getTodaysUsername() === '' ?
+
+            <GameForm onSubmit={handleSubmitGuess} />
+            :
+            <SubmittedContainer>
+              <Subheader>Come back in</Subheader>
+              <CountdownTimer targetDate={timeToNext.getTime()} handleCountdownEnd={handleCountdownEnd} />
+              <Subheader>to see your score and play again!</Subheader>
+            </SubmittedContainer>
+        }
+
         <Results
           previousDayResults={previousDayResults}
         />

@@ -9,7 +9,8 @@ const palette = {
   },
   secondary: {
     300: '#6C6C96',
-    400: '#b97b7b'
+    400: '#b97b7b',
+    500: '#FFB672',
   }
 };
 
@@ -26,6 +27,7 @@ export const theme = {
   },
   secondary: {
     background: palette.secondary[300],
+    text: palette.secondary[500],
     button: {
         unpressed: palette.secondary[400],
         pressed: palette.primary[600],
