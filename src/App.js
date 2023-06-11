@@ -22,10 +22,9 @@ const SubmittedContainer = styled(Container)`
 
 const App = () => {
   const [previousDayResults, setPreviousDayResults] = useState({
-    averageGuess: 'No data',
-    target: 'No data',
-    winnerGuess: 'No data',
-    userGuess: 'No data'
+    averageGuess: '⌛',
+    target: '⌛',
+    winnerGuess: '⌛',
   });
 
   const [userGuess, setUserGuess] = useState(null);

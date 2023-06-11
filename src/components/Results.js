@@ -43,10 +43,12 @@ const Results = ({ previousDayResults }) => {
             <TableData>Winner's Guess:</TableData>
             <TableValue>{previousDayResults.winnerGuess ?? "🤔"}</TableValue>
           </TableRow>
+          { previousDayResults.userGuess && 
           <TableRow>
-            <TableData>Your Guess:</TableData>
+            <TableData><strong>Your Guess:</strong></TableData>
             <TableValue>{previousDayResults.userGuess ?? "🤔"}</TableValue>
           </TableRow>
+          }
         </tbody>
       </ResultsTable>
     </div>

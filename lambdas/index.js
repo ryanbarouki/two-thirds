@@ -149,7 +149,7 @@ exports.getPreviousResults = async (event) => {
     body: JSON.stringify({
       averageGuess: averageGuess.toFixed(2),
       target: target.toFixed(2),
-      userGuess: userGuess.toFixed(2),
+      userGuess: userGuess ? userGuess.toFixed(2) : null,
       winnerGuess: closestGuess.guess.toFixed(2),
     }),
   };
