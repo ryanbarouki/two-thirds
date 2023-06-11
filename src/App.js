@@ -14,6 +14,7 @@ import 'react-toastify/dist/ReactToastify.css';
 const Subheader = styled.div`
   font-weight: 400;
   font-size: 1.2rem;
+  text-align: center;
 `;
 
 const SubmittedContainer = styled(Container)`
