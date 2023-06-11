@@ -1,8 +1,9 @@
 # TODO
 - Improve styling
-- make the guess input a slider?
+    - hide yesterday's scores under dropdown
+- make the guess input a slider? Not sure
 - make sure the guess is submitted successfully before displaying the countdown
-- check username is unique
+- add loading markers before data has been fetched
 - leaderboard page
 - host on netlify
 # Notes
