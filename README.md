@@ -4,6 +4,7 @@
 - make sure the guess is submitted successfully before displaying the countdown
 - check username is unique
 - leaderboard page
+- host on netlify
 # Notes
 - Countdown refreshes to next occurence of midnight once it has passed and gets the previous day results again
 but this only works if the countdown is set to midnight UTC because the lambdas look for the previous UTC day not a 
