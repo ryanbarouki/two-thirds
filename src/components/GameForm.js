@@ -8,13 +8,17 @@ const GameForm = ({ onSubmit }) => {
   const dayString = useMemo(getDayString, []);
   const [guess, setGuess] = useState('');
   const [username, setUsername] = useState('');
+  const [disabled, setDisabled] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setDisabled(true);
     if (await onSubmit(username, parseFloat(guess, 10)) === true) {
       setGuess('');
       setUsername('');
       saveUsername(dayString, username);
+    } else {
+      setDisabled(false);
     }
   };
 
@@ -27,6 +31,9 @@ const GameForm = ({ onSubmit }) => {
         value={username}
         onChange={(e) => setUsername(e.target.value)}
         placeholder='Enter a username'
+        pattern='[a-zA-Z0-9]+'
+        title='Please enter only letters and numbers'
+        disabled={disabled}
         required
       />
       <Input
@@ -38,10 +45,11 @@ const GameForm = ({ onSubmit }) => {
         max="100"
         step="0.01"
         onChange={(e) => setGuess(e.target.value)}
-        required
         placeholder='Enter your guess'
+        disabled={disabled}
+        required
       />
-      <Button type="submit">Guess!</Button>
+      <Button type="submit" disabled={disabled}>Guess!</Button>
     </Form>
   );
 };
