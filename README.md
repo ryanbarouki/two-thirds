@@ -1,10 +1,13 @@
 # TODO
+- add the user's ranking to the results
+- leaderboard page
+- test cases for back-end stuff
 - Improve styling
     - hide yesterday's scores under dropdown
     - icons and logo
 - make the guess input a slider? Not sure
 - add loading markers before data has been fetched - not crucial but nice
-- leaderboard page
+- serverside validation for the username and guess 
 # Notes
 - Countdown refreshes to next occurence of midnight once it has passed and gets the previous day results again
 but this only works if the countdown is set to midnight UTC because the lambdas look for the previous UTC day not a 

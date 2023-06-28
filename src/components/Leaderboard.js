@@ -14,14 +14,14 @@ const Leaderboard = ({ leaderboardData }) => {
         <thead>
           <tr>
             <TableHeader>Username</TableHeader>
-            <TableHeader>Wins</TableHeader>
+            <TableHeader>Guess</TableHeader>
           </tr>
         </thead>
         <tbody>
           {leaderboardData.map((entry, index) => (
             <tr key={index}>
               <TableCell>{entry.username}</TableCell>
-              <TableCell>{entry.wins}</TableCell>
+              <TableCell>{entry.guess}</TableCell>
             </tr>
           ))}
         </tbody>

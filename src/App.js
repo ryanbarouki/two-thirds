@@ -32,10 +32,10 @@ const App = () => {
   const [timeToNext, setTimeToNext] = useState(getNextOccurrence(24));
   const [submitted, setSubmitted] = useState(getTodaysUsername() !== '');
 
-  const [leaderboardData] = useState([
-    { username: 'player1', wins: 5 },
-    { username: 'player2', wins: 3 },
-    { username: 'player3', wins: 2 },
+  const [leaderboardData, setLeaderboardData] = useState([
+    { username: 'player1', guess: 22 },
+    { username: 'player2', guess: 3 },
+    { username: 'player3', guess: 12 },
   ]);
 
 
@@ -46,9 +46,16 @@ const App = () => {
           username: getYesterdaysUsername()
         })
         .then(response => setPreviousDayResults(response.data))
-        .catch(error => console.error('There was an error!', error));
+        .catch(error => console.error('Error when fetching previous results', error));
+      };
+
+      const fetchLeaderboard = async () => {
+        axios.get(process.env.REACT_APP_API_ENDPOINT + 'leaderboard')
+        .then(response => setLeaderboardData(response.data))
+        .catch(error => console.error('Error when fetching leaderboard', error))
       };
       fetchPrevResults();
+      fetchLeaderboard();
     },
   [timeToNext]);
 
@@ -97,6 +104,9 @@ const App = () => {
 
         <Results
           previousDayResults={previousDayResults}
+        />
+        <Leaderboard 
+        leaderboardData={leaderboardData}
         />
       </Container>
     </>

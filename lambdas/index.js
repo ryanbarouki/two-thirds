@@ -74,8 +74,8 @@ exports.getLeaderboard = async (event) => {
     const data = await dynamoDb.scan(params).promise();
     const guessItems = data.Items;
 
-    const averageGuess = guessItems.reduce((total, item) => total + item.guess, 0) / guessItems.length;
-    const target = averageGuess * (2 / 3);
+    const averageGuess = guessItems.length > 0 ? guessItems.reduce((total, item) => total + item.guess, 0) / guessItems.length : null;
+    const target = averageGuess ? averageGuess * (2 / 3) : null;
 
     guessItems.forEach(item => {
       item.distance = Math.abs(target - item.guess);
@@ -89,6 +89,10 @@ exports.getLeaderboard = async (event) => {
 
     return {
       statusCode: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "*", // Or specify your frontend domain
+        "Access-Control-Allow-Credentials": true,
+      },
       body: JSON.stringify(leaderboard),
     };
   } catch (error) {
@@ -125,9 +129,9 @@ exports.getPreviousResults = async (event) => {
   };
 
   const result = await dynamoDb.scan(params).promise();
-  const userGuess = result.Items.find(item => item.username === username)?.guess || null;
-  const averageGuess = result.Items.reduce((a, b) => a + b.guess, 0) / result.Items.length;
-  const target = averageGuess * 2 / 3;
+  const userGuess = result.Items.length > 0 ? result.Items.find(item => item.username === username)?.guess || null : null;
+  const averageGuess = result.Items.length > 0 ? result.Items.reduce((a, b) => a + b.guess, 0) / result.Items.length : null;
+  const target = averageGuess ? averageGuess * 2 / 3 : null;
 
   // Find the user guess that is closest to the target
   let closestGuess = null;
@@ -147,10 +151,10 @@ exports.getPreviousResults = async (event) => {
       "Access-Control-Allow-Credentials": true,
     },
     body: JSON.stringify({
-      averageGuess: averageGuess.toFixed(2),
-      target: target.toFixed(2),
+      averageGuess: averageGuess?.toFixed(2),
+      target: target?.toFixed(2),
       userGuess: userGuess ? userGuess.toFixed(2) : null,
-      winnerGuess: closestGuess.guess.toFixed(2),
+      winnerGuess: closestGuess?.guess.toFixed(2) || null,
     }),
   };
 };
