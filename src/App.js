@@ -32,11 +32,7 @@ const App = () => {
   const [timeToNext, setTimeToNext] = useState(getNextOccurrence(24));
   const [submitted, setSubmitted] = useState(getTodaysUsername() !== '');
 
-  const [leaderboardData, setLeaderboardData] = useState([
-    { username: 'player1', guess: 22 },
-    { username: 'player2', guess: 3 },
-    { username: 'player3', guess: 12 },
-  ]);
+  const [leaderboardData, setLeaderboardData] = useState([]);
 
 
   useEffect(() => {
