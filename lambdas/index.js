@@ -64,9 +64,12 @@ exports.getLeaderboard = async (event) => {
 
   const params = {
     TableName: GUESS_TABLE_NAME,
-    FilterExpression: 'begins_with(timestamp, :date)',
+    FilterExpression: 'begins_with(#ts, :yesterday)',
+    ExpressionAttributeNames: {
+      '#ts': 'timestamp',
+    },
     ExpressionAttributeValues: {
-      ':date': yesterdayString,
+      ':yesterday': yesterdayString,
     },
   };
 
@@ -102,7 +105,7 @@ exports.getLeaderboard = async (event) => {
         "Access-Control-Allow-Origin": "*", // Or specify your frontend domain
         "Access-Control-Allow-Credentials": true,
       },
-      body: JSON.stringify({ error: 'Could not retrieve leaderboard' }),
+      body: JSON.stringify({ error: 'Could not retrieve leaderboard ' + error }),
     };
   }
 };
@@ -118,7 +121,7 @@ exports.getPreviousResults = async (event) => {
 
   // Scan the entire table and filter items based on the 'timestamp' attribute
   const params = {
-    TableName: 'TwoThirdsGuesses',
+    TableName: GUESS_TABLE_NAME,
     FilterExpression: 'begins_with(#ts, :yesterday)',
     ExpressionAttributeNames: {
       '#ts': 'timestamp',
