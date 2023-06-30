@@ -3,13 +3,17 @@ import {
   TableHeader,
   TableCell,
   SectionTitle,
+  Label,
 } from '../styles/StyledComponents';
 
-const Leaderboard = ({ leaderboardData }) => {
+const Leaderboard = ({ leaderboardData, userRank }) => {
   // ...
   return (
     <div>
-      <SectionTitle>Yesterday's Leaderboard</SectionTitle>
+      <SectionTitle>Yesterday's top 10 players</SectionTitle>
+      {userRank &&
+      <Label>Your rank: {userRank}</Label>
+      }
       <Table>
         <thead>
           <tr>

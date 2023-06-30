@@ -136,16 +136,24 @@ exports.getPreviousResults = async (event) => {
   const averageGuess = result.Items.length > 0 ? result.Items.reduce((a, b) => a + b.guess, 0) / result.Items.length : null;
   const target = averageGuess ? averageGuess * 2 / 3 : null;
 
-  // Find the user guess that is closest to the target
+  // Find the user guess that is closest to the target and calculate all user ranks
   let closestGuess = null;
   let smallestDifference = Infinity;
+  const rankList = [];
   result.Items.forEach(item => {
     const difference = Math.abs(item.guess - target);
+    rankList.push({username: item.username, difference: difference});
     if (difference < smallestDifference) {
       smallestDifference = difference;
       closestGuess = item;
     }
   });
+
+  // Sort the rank list by difference
+  rankList.sort((a, b) => a.difference - b.difference);
+
+  // Find the user's rank
+  const userRank = rankList.findIndex(item => item.username === username) + 1;
 
   return {
     statusCode: 200,
@@ -158,6 +166,7 @@ exports.getPreviousResults = async (event) => {
       target: target?.toFixed(2),
       userGuess: userGuess ? userGuess.toFixed(2) : null,
       winnerGuess: closestGuess?.guess.toFixed(2) || null,
+      userRank: userRank || null,
     }),
   };
 };

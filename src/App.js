@@ -103,6 +103,7 @@ const App = () => {
         />
         <Leaderboard 
         leaderboardData={leaderboardData}
+        userRank={previousDayResults.userRank}
         />
       </Container>
     </>
