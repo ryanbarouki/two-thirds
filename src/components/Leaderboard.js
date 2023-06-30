@@ -14,6 +14,7 @@ const Leaderboard = ({ leaderboardData, username }) => {
       <Table>
         <thead>
           <tr>
+            <TableHeader>#</TableHeader>
             <TableHeader>Username</TableHeader>
             <TableHeader>Guess</TableHeader>
           </tr>
@@ -21,6 +22,7 @@ const Leaderboard = ({ leaderboardData, username }) => {
         <tbody>
           {leaderboardData.map((entry, index) => (
             <tr key={index}>
+              <TableCell>{index+1}</TableCell>
               <TableCell>{entry.username}{entry.username === username ? <strong> (You)</strong> : ""}</TableCell>
               <TableCell>{entry.guess}</TableCell>
             </tr>

@@ -90,22 +90,24 @@ const App = () => {
         {
           submitted ?
 
+          <>
             <SubmittedContainer>
               <Subheader>Come back in</Subheader>
               <CountdownTimer targetDate={timeToNext.getTime()} handleCountdownEnd={handleCountdownEnd} />
               <Subheader>to see your score and play again!</Subheader>
             </SubmittedContainer>
+            <Results
+              previousDayResults={previousDayResults}
+            />
+            <Leaderboard 
+            leaderboardData={leaderboardData}
+            username={prevUsername}
+            />
+          </>
             :
             <GameForm onSubmit={handleSubmitGuess} />
         }
 
-        <Results
-          previousDayResults={previousDayResults}
-        />
-        <Leaderboard 
-        leaderboardData={leaderboardData}
-        username={prevUsername}
-        />
       </Container>
     </>
   );

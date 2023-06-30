@@ -1,12 +1,9 @@
 # TODO
-- add the user's ranking to the results
-- leaderboard page
+- how to page
+- share option
 - test cases for back-end stuff
 - Improve styling
-    - hide yesterday's scores under dropdown
     - icons and logo
-- make the guess input a slider? Not sure
-- add loading markers before data has been fetched - not crucial but nice
 - serverside validation for the username and guess 
 # Notes
 - Countdown refreshes to next occurence of midnight once it has passed and gets the previous day results again
