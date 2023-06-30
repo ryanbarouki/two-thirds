@@ -11,10 +11,7 @@ export function Share({guess, rank}) {
     const dayString = DateTime.now().toFormat("yyyy-MM-dd", {zone: 'utc'});
     const currentDate = DateTime.fromFormat(dayString, 'yyyy-MM-dd', {zone: 'utc'});
     const diffInDays = Math.floor(currentDate.diff(FIRST_DAY_OF_TWOTHIRDS, 'days').toObject().days);
-    let shareString = `#TwoThirds #${diffInDays}
-    I guessed ${guess} and ranked #${rank}
-    Can you outsmart everyone tomorrow?
-    https://www.twothirds.app`;
+    let shareString = `#TwoThirds #${diffInDays}\nI guessed ${guess} and ranked #${rank}\nCan you outsmart everyone tomorrow?\nhttps://www.twothirds.app`;
     return shareString
   }, [guess, rank]);
 
