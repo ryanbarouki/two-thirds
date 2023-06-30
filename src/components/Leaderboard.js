@@ -6,14 +6,11 @@ import {
   Label,
 } from '../styles/StyledComponents';
 
-const Leaderboard = ({ leaderboardData, userRank }) => {
+const Leaderboard = ({ leaderboardData, username }) => {
   // ...
   return (
     <div>
       <SectionTitle>Yesterday's top 10 players</SectionTitle>
-      {userRank &&
-      <Label>Your rank: {userRank}</Label>
-      }
       <Table>
         <thead>
           <tr>
@@ -24,7 +21,7 @@ const Leaderboard = ({ leaderboardData, userRank }) => {
         <tbody>
           {leaderboardData.map((entry, index) => (
             <tr key={index}>
-              <TableCell>{entry.username}</TableCell>
+              <TableCell>{entry.username === username ? `${entry.username}(You)` : entry.username}</TableCell>
               <TableCell>{entry.guess}</TableCell>
             </tr>
           ))}

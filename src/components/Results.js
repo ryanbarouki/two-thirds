@@ -36,18 +36,20 @@ const Results = ({ previousDayResults }) => {
             <TableValue>{previousDayResults.averageGuess ?? "🤔"}</TableValue>
           </TableRow>
           <TableRow>
-            <TableData>2/3 Target:</TableData>
+            <TableData>2/3 Average:</TableData>
             <TableValue>{previousDayResults.target ?? "🤔"}</TableValue>
           </TableRow>
-          <TableRow>
-            <TableData>Winner's Guess:</TableData>
-            <TableValue>{previousDayResults.winnerGuess ?? "🤔"}</TableValue>
-          </TableRow>
           { previousDayResults.userGuess && 
+          <>
           <TableRow>
             <TableData><strong>Your Guess:</strong></TableData>
             <TableValue>{previousDayResults.userGuess ?? "🤔"}</TableValue>
           </TableRow>
+          <TableRow>
+            <TableData><strong>Your Rank:</strong></TableData>
+            <TableValue>{previousDayResults.userRank ?? "🤔"}</TableValue>
+          </TableRow>
+          </>
           }
         </tbody>
       </ResultsTable>

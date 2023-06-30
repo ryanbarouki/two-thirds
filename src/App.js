@@ -33,13 +33,14 @@ const App = () => {
   const [submitted, setSubmitted] = useState(getTodaysUsername() !== '');
 
   const [leaderboardData, setLeaderboardData] = useState([]);
+  const [prevUsername] = useState(getYesterdaysUsername());
 
 
   useEffect(() => {
       const fetchPrevResults = async () => {
         axios.post(process.env.REACT_APP_API_ENDPOINT + 'previous-results',
         {
-          username: getYesterdaysUsername()
+          username: prevUsername
         })
         .then(response => setPreviousDayResults(response.data))
         .catch(error => console.error('Error when fetching previous results', error));
@@ -103,7 +104,7 @@ const App = () => {
         />
         <Leaderboard 
         leaderboardData={leaderboardData}
-        userRank={previousDayResults.userRank}
+        username={prevUsername}
         />
       </Container>
     </>
