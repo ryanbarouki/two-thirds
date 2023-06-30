@@ -21,7 +21,7 @@ const Leaderboard = ({ leaderboardData, username }) => {
         <tbody>
           {leaderboardData.map((entry, index) => (
             <tr key={index}>
-              <TableCell>{entry.username === username ? `${entry.username}(You)` : entry.username}</TableCell>
+              <TableCell>{entry.username}{entry.username === username ? <strong> (You)</strong> : ""}</TableCell>
               <TableCell>{entry.guess}</TableCell>
             </tr>
           ))}
