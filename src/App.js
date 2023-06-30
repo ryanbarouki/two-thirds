@@ -10,6 +10,7 @@ import { getNextOccurrence } from './utils';
 import styled from 'styled-components';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { Share } from './components/Share';
 
 const Subheader = styled.div`
   font-weight: 400;
@@ -99,6 +100,13 @@ const App = () => {
             <Results
               previousDayResults={previousDayResults}
             />
+            {
+            previousDayResults.userGuess && 
+            <Share
+            guess={previousDayResults.userGuess}
+            rank={previousDayResults.userRank}
+            />
+            }
             <Leaderboard 
             leaderboardData={leaderboardData}
             username={prevUsername}
