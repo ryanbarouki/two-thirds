@@ -80,6 +80,6 @@ export const TableCell = styled.td`
 `;
 
 export const SectionTitle = styled.h2`
-  margin-top: 3rem;
+  margin-top: 1rem;
   margin-bottom: 1rem;
 `;
