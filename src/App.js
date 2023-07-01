@@ -11,6 +11,7 @@ import styled from 'styled-components';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Share } from './components/Share';
+import { Help } from './components/Help';
 
 const Subheader = styled.div`
   font-weight: 400;
@@ -20,6 +21,22 @@ const Subheader = styled.div`
 
 const SubmittedContainer = styled(Container)`
   gap: 0.5rem;
+`;
+
+const HowTo = styled.div`
+  display: flex;
+  svg{
+    height: 1.5em;
+    width: 1.5em;
+    margin-left: 0.5em;
+    color: white;
+  }
+`;
+
+const IconButton = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
 `;
 
 const App = () => {
@@ -87,6 +104,7 @@ const App = () => {
     />
       <Container>
         <Title>2/3</Title>
+        <HowTo>How to play: <IconButton><Help/></IconButton></HowTo>
 
         {
           submitted ?

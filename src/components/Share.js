@@ -18,7 +18,7 @@ export function Share({guess, rank}) {
   return (
     <CopyToClipboard
       text={shareText}
-      onCopy={() => toast("Copied Results to Clipboard", { autoClose: 2000 })}
+      onCopy={() => toast.success("Copied Results to Clipboard", { autoClose: 2000 })}
       options={{ format: "text/plain" }}
     >
       <Button><span>Share Score</span></Button>

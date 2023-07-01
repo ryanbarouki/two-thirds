@@ -7,7 +7,7 @@ export const Container = styled.div`
   align-items: center;
   max-width: 800px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem;
   background-color: #fff;
   background-color: var(--primary-background);
 `;
