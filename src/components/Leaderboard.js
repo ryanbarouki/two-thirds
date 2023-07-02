@@ -6,11 +6,12 @@ import {
   Label,
 } from '../styles/StyledComponents';
 
-const Leaderboard = ({ leaderboardData, username }) => {
+const Leaderboard = ({ leaderboardData, username, numberOfPlayers }) => {
   // ...
   return (
     <div>
       <SectionTitle>Yesterday's top 10 players</SectionTitle>
+      <Label>Number of players: <strong>{numberOfPlayers}</strong></Label>
       <Table>
         <thead>
           <tr>

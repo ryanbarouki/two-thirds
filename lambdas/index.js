@@ -167,6 +167,7 @@ exports.getPreviousResults = async (event) => {
       userGuess: userGuess ? userGuess.toFixed(2) : null,
       winnerGuess: closestGuess?.guess.toFixed(2) || null,
       userRank: userRank || null,
+      numberOfPlayers: result.Items?.length
     }),
   };
 };

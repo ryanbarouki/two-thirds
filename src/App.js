@@ -128,6 +128,7 @@ const App = () => {
             <Leaderboard 
             leaderboardData={leaderboardData}
             username={prevUsername}
+            numberOfPlayers={previousDayResults.numberOfPlayers}
             />
           </>
             :

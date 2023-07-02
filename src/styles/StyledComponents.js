@@ -25,7 +25,7 @@ export const Form = styled.form`
   margin-bottom: 2rem;
 `;
 
-export const Label = styled.label`
+export const Label = styled.div`
   font-size: 1rem;
   margin-bottom: 1rem;
 `;

@@ -1,5 +1,4 @@
 # TODO
-- display total number of players
 - google analytics
 - test cases for back-end stuff
 - serverside validation for the username and guess 
