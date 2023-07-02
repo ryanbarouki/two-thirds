@@ -1,9 +1,7 @@
 # TODO
-- how to page
-- share option
+- display total number of players
+- google analytics
 - test cases for back-end stuff
-- Improve styling
-    - icons and logo
 - serverside validation for the username and guess 
 # Notes
 - Countdown refreshes to next occurence of midnight once it has passed and gets the previous day results again
