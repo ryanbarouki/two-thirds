@@ -1,5 +1,6 @@
 # TODO
 - google analytics
+- turn into a PWA for push notifications
 - test cases for back-end stuff
 - serverside validation for the username and guess 
 # Notes
