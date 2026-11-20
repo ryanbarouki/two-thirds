@@ -312,4 +312,12 @@ p { line-height: 1.55; margin: 0; }
 }
 @media (max-width: 540px) {
   .round-status:has(.round-clock) .round-indicator { display: none; }
+  .locked-guess {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); row-gap: 8px;
+  }
+  .receipt-clock {
+    grid-column: 2; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px;
+    margin: 0; padding: 0; border: 0;
+  }
+  .receipt-clock span { margin: 0; }
 }
