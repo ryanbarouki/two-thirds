@@ -22,12 +22,18 @@ function NumberLine({ markers }) {
   );
 }
 
-export default function Results({ result, day, error, onRetry }) {
+export default function Results({ result, day, error, lookupUsername, onRetry, onLookup }) {
   const played = result?.userGuess != null;
+  const showLookup = Boolean(lookupUsername || (result?.numberOfPlayers && !played));
+  const lookupResult = event => {
+    event.preventDefault();
+    const username = new FormData(event.currentTarget).get('username').trim();
+    if (username) onLookup(username);
+  };
   const markers = result?.numberOfPlayers ? [
     { name: 'Crowd average', value: result.averageGuess, color: 'average' },
     { name: 'Target', value: result.target, color: 'target' },
-    ...(played ? [{ name: 'Your guess', value: result.userGuess, color: 'your-guess' }] : []),
+    ...(played ? [{ name: lookupUsername ? 'Player’s guess' : 'Your guess', value: result.userGuess, color: 'your-guess' }] : []),
   ] : [];
 
   return (
@@ -48,14 +54,27 @@ export default function Results({ result, day, error, onRetry }) {
           <>
             {played ? (
               <div className="placement">
-                <strong>You placed {result.userRank} of {result.numberOfPlayers}</strong>
+                <strong>{lookupUsername || 'You'} placed {result.userRank} of {result.numberOfPlayers}</strong>
                 <span>{result.userDistance === 0 ? 'Right on target' : formatGuess(result.userDistance) + ' away from the target'}</span>
               </div>
             ) : <p className="player-count">{result.numberOfPlayers} {result.numberOfPlayers === 1 ? 'player' : 'players'}</p>}
             <NumberLine markers={markers} />
-            {played && <Share day={day} guess={result.userGuess} rank={result.userRank} total={result.numberOfPlayers} />}
+            {played && !lookupUsername && <Share day={day} guess={result.userGuess} rank={result.userRank} total={result.numberOfPlayers} />}
           </>
         )}
+      {showLookup && (
+        <details className="result-lookup">
+          <summary>Find a result by username</summary>
+          <form className="result-lookup-form" onSubmit={lookupResult}>
+            <label htmlFor="results-username">Username from yesterday’s round</label>
+            <input id="results-username" name="username" autoComplete="off" required />
+            <button className="secondary-button" type="submit">Find result</button>
+          </form>
+          {lookupUsername && result && !played && (
+            <p className="results-status" role="status">No guess found for {lookupUsername} yesterday.</p>
+          )}
+        </details>
+      )}
     </section>
   );
 }

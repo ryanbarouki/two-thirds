@@ -186,7 +186,7 @@ p { line-height: 1.55; margin: 0; }
 .guess-playfield p { margin-top: 8px; color: var(--muted); text-align: center; font-size: .875rem; }
 .guess-entry { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; margin-top: 16px; }
 .username-field { display: grid; gap: 6px; }
-.username-field input {
+.username-field input, .result-lookup-form input {
   width: 100%; min-height: 46px; padding: 9px 12px; border: 1px solid var(--line);
   border-radius: 8px; background: var(--well); color: var(--text);
 }
@@ -264,6 +264,14 @@ p { line-height: 1.55; margin: 0; }
 .empty-results svg { color: var(--signal); flex: none; width: 20px; height: 20px; }
 .player-count, .results-status, .share span { color: var(--muted); }
 .results-status button { margin-top: 12px; }
+.result-lookup { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+.result-lookup summary { color: var(--signal); cursor: pointer; font-size: .875rem; font-weight: 700; }
+.result-lookup-form {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
+  gap: 6px 8px; margin-top: 10px;
+}
+.result-lookup-form label { grid-column: 1 / -1; font-size: .875rem; font-weight: 600; }
+.result-lookup .results-status { margin-top: 8px; font-size: .875rem; }
 .number-line { margin-top: 18px; }
 .result-ruler { padding: 22px 12px 7px; }
 .number-track { --ruler-step: 5%; height: 21px; }

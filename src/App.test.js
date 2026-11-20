@@ -41,7 +41,7 @@ test('locks and restores a zero guess, then reopens and reveals the score at UTC
 
   const { unmount } = render(<App />);
   await screen.findByText('No guesses were submitted yesterday.');
-  await screen.findByText('1 guess this round');
+  await screen.findByText('1 guess so far');
   expect(screen.queryByRole('button', { name: 'Copy invite link' })).toBeNull();
   const scale = screen.getByRole('slider');
   const guessInput = screen.getByLabelText('Your guess');
@@ -59,7 +59,7 @@ test('locks and restores a zero guess, then reopens and reveals the score at UTC
   fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'Ada' } });
   fireEvent.click(screen.getByRole('button', { name: 'Lock in my guess' }));
   await screen.findByText('Guess locked in.');
-  await screen.findByText('2 guesses this round');
+  await screen.findByText('2 guesses so far');
   expect(screen.getByRole('button', { name: 'Copy invite link' })).toBeTruthy();
   expect(JSON.parse(localStorage.getItem('usernames'))['2026-11-20']).toEqual({ username: 'Ada', guess: 0 });
 
@@ -67,13 +67,13 @@ test('locks and restores a zero guess, then reopens and reveals the score at UTC
   render(<App />);
   expect(screen.getByText('Guess locked in.')).toBeTruthy();
   await screen.findByText('No guesses were submitted yesterday.');
-  await screen.findByText('2 guesses this round');
+  await screen.findByText('2 guesses so far');
 
   act(() => jest.advanceTimersByTime(2000));
   expect(screen.getByLabelText('Username').value).toBe('Ada');
   expect(screen.getByRole('slider').value).toBe('0');
-  expect(screen.queryByText('2 guesses this round')).toBeNull();
-  await screen.findByText('0 guesses this round');
+  expect(screen.queryByText('2 guesses so far')).toBeNull();
+  await screen.findByText('0 guesses so far');
   await screen.findByText('You placed 1 of 1');
   expect(screen.getByText('Right on target')).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Share score' })).toBeTruthy();
@@ -96,4 +96,44 @@ test('shares the game URL and a challenge through the native share sheet', async
     if (original) Object.defineProperty(navigator, 'share', original);
     else delete navigator.share;
   }
+});
+
+test('looks up yesterday’s saved result by username when browser history is missing', async () => {
+  const result = {
+    day: '2026-11-19', numberOfPlayers: 2, averageGuess: 15, target: 10,
+    leaderboard: [{ username: 'Ada', guess: 0, rank: 1 }],
+  };
+  axios.get.mockResolvedValue({ data: { day: '2026-11-20', count: 1 } });
+  axios.post
+    .mockResolvedValueOnce({ data: result })
+    .mockResolvedValueOnce({ data: result })
+    .mockResolvedValueOnce({ data: { ...result, userGuess: 0, userRank: 1, userDistance: 10 } });
+
+  render(<App />);
+  const lookup = await screen.findByText('Find a result by username');
+  fireEvent.click(lookup);
+  const name = screen.getByLabelText('Username from yesterday’s round');
+  fireEvent.change(name, { target: { value: 'MissingName' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Find result' }));
+  await screen.findByText('No guess found for MissingName yesterday.');
+  fireEvent.change(name, { target: { value: 'Ada' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Find result' }));
+  await screen.findByText('Ada placed 1 of 2');
+  expect(screen.getByText('Player’s guess')).toBeTruthy();
+  expect(axios.post).toHaveBeenLastCalledWith(expect.stringContaining('previous-results'), { username: 'Ada' }, expect.anything());
+  expect(localStorage.getItem('usernames')).toBeNull();
+});
+
+test('keeps locked guesses and personal results from older username-only browser storage', async () => {
+  localStorage.setItem('usernames', JSON.stringify({ '2026-11-19': 'Ada', '2026-11-20': 'Ada' }));
+  axios.get.mockResolvedValue({ data: { day: '2026-11-20', count: 1 } });
+  axios.post.mockResolvedValue({ data: {
+    day: '2026-11-19', numberOfPlayers: 1, averageGuess: 0, target: 0,
+    userGuess: 0, userRank: 1, userDistance: 0, leaderboard: [],
+  } });
+
+  render(<App />);
+  expect(screen.getByText('Guess locked in.')).toBeTruthy();
+  await screen.findByText('You placed 1 of 1');
+  expect(axios.post).toHaveBeenCalledWith(expect.stringContaining('previous-results'), { username: 'Ada' }, expect.anything());
 });

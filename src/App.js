@@ -22,12 +22,15 @@ export default function App() {
   const resultsDay = shiftDay(day, -1);
   const [entries, setEntries] = useState(loadEntries);
   const [results, setResults] = useState(null);
+  const [resultLookup, setResultLookup] = useState(null);
   const [attempt, setAttempt] = useState(0);
   const [roundCount, setRoundCount] = useState(null);
   const [countRefresh, setCountRefresh] = useState(0);
   const entry = getEntry(entries, day);
   const guessCount = roundCount?.day === day ? roundCount.count : null;
-  const previousUsername = getEntry(entries, resultsDay)?.username ?? '';
+  const savedUsername = getEntry(entries, resultsDay)?.username ?? '';
+  const lookupUsername = resultLookup?.day === resultsDay ? resultLookup.username : '';
+  const previousUsername = lookupUsername || savedUsername;
   const currentResults = results?.day === resultsDay && results.username === previousUsername &&
     results.attempt === attempt ? results : null;
   const resultData = currentResults?.data;
@@ -138,10 +141,12 @@ export default function App() {
         </section>
 
         <div className="round-summary">
-          <Results result={resultData} day={resultsDay} error={currentResults?.error}
-            onRetry={() => setAttempt(value => value + 1)} />
+          <Results key={resultsDay} result={resultData} day={resultsDay} error={currentResults?.error}
+            lookupUsername={lookupUsername}
+            onRetry={() => setAttempt(value => value + 1)}
+            onLookup={username => setResultLookup({ day: resultsDay, username })} />
           {resultData?.leaderboard.length > 0 &&
-            <Leaderboard data={resultData.leaderboard} username={previousUsername} />}
+            <Leaderboard data={resultData.leaderboard} username={savedUsername} />}
         </div>
       </div>
 
