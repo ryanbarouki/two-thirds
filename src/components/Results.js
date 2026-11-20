@@ -5,12 +5,14 @@ import { Share } from './Share';
 function NumberLine({ markers }) {
   return (
     <div className="number-line">
-      <div className="number-track" aria-hidden="true">
-        {markers.map(({ name, value, color }) => (
-          <span key={name} className={'number-marker ' + color} style={{ left: value + '%' }} />
-        ))}
+      <div className="result-ruler ruler-surface" aria-hidden="true">
+        <div className="number-track ruler-marks">
+          {markers.map(({ name, value, color }) => (
+            <span key={name} className={'number-marker ' + color} style={{ left: value + '%' }} />
+          ))}
+        </div>
+        <div className="number-ticks"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
       </div>
-      <div className="number-ticks" aria-hidden="true"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
       <dl className="result-legend">
         {markers.map(({ name, value, color }) => (
           <div key={name}><dt><span className={'legend-dot ' + color} />{name}</dt><dd>{formatGuess(value)}</dd></div>

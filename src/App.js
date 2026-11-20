@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { FiCheck, FiClock } from 'react-icons/fi';
+import { FiClock, FiLock } from 'react-icons/fi';
 import GameForm from './components/GameForm';
 import Leaderboard from './components/Leaderboard';
 import Results from './components/Results';
@@ -71,28 +71,37 @@ export default function App() {
     <main className="shell">
       <header className="masthead">
         <div className="wordmark"><span className="brand-mark" aria-hidden="true">⅔</span> Two Thirds</div>
-        <div className="round-indicator"><span aria-hidden="true" /> Daily round <time dateTime={day}>{formatDay(day)} UTC</time></div>
+        <div className="round-status">
+          <div className="round-indicator"><span aria-hidden="true" /><time dateTime={day}>{formatDay(day)} UTC</time></div>
+          {!entry && (
+            <div className="card-meta round-clock"><FiClock aria-hidden="true" /> Closes in
+              <CountdownTimer now={now} deadline={nextRound} />
+            </div>
+          )}
+        </div>
       </header>
 
       <div className="game-layout">
         <section className="card play-card" aria-labelledby="play-title">
           <div className="play-header">
-            <div className="card-meta round-clock"><FiClock aria-hidden="true" /> {entry ? 'Next round in' : 'Round closes in'}
-              <CountdownTimer now={now} deadline={nextRound} />
-            </div>
-            <h1 id="play-title">{entry ? 'Guess locked in.' : 'Can you outwit the crowd?'}</h1>
+            <h1 id="play-title">{entry ? 'Guess locked in.' : <>Can <em>you</em> outwit the crowd?</>}</h1>
             {!entry && (
-              <p className="intro">Pick a number from 0 to 100. Closest to two-thirds of today’s average wins.
-                <span className="example">If the average is <b>60</b>, the target is <b>40</b>.</span>
-              </p>
+              <details className="how-to-play">
+                <summary>How to play</summary>
+                <p>Pick a number from 0 to 100. Closest to two-thirds of today’s average wins.</p>
+                <p>If the average is <b>60</b>, the target is <b>40</b>. You get one guess per round.</p>
+              </details>
             )}
           </div>
           <div className="play-body">
             {entry ? (
               <div className="locked-guess" role="status">
-                <FiCheck aria-hidden="true" />
+                <FiLock aria-hidden="true" />
                 <div><strong>{entry.guess == null ? 'Entry confirmed' : formatGuess(entry.guess)}</strong>
-                  <span>Playing as {entry.username}. Results unlock at midnight UTC.</span></div>
+                  <span>Playing as {entry.username}</span></div>
+                <div className="receipt-clock">
+                  <span>Results in</span><CountdownTimer now={now} deadline={nextRound} />
+                </div>
               </div>
             ) : (
               <GameForm key={day} onSubmit={submitGuess} initialUsername={getLastUsername(entries, day)} />
