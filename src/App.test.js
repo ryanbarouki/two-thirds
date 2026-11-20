@@ -34,7 +34,19 @@ test('locks and restores a zero guess, then reopens and reveals the score at UTC
 
   const { unmount } = render(<App />);
   await screen.findByText('No guesses were submitted yesterday.');
-  fireEvent.change(screen.getByLabelText('Your guess'), { target: { value: '0' } });
+  const scale = screen.getByRole('slider');
+  const guessInput = screen.getByLabelText('Your guess');
+  expect(scale.value).toBe('0');
+  expect(guessInput.value).toBe('0');
+  expect(scale.step).toBe('0.01');
+  fireEvent.change(scale, { target: { value: '37.25' } });
+  expect(guessInput.value).toBe('37.25');
+  fireEvent.click(screen.getByRole('button', { name: 'Increase guess by 0.01' }));
+  expect(scale.value).toBe('37.26');
+  fireEvent.click(screen.getByRole('button', { name: 'Decrease guess by 0.01' }));
+  expect(guessInput.value).toBe('37.25');
+  fireEvent.change(guessInput, { target: { value: '0' } });
+  expect(scale.value).toBe('0');
   fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'Ada' } });
   fireEvent.click(screen.getByRole('button', { name: 'Lock in my guess' }));
   await screen.findByText('Guess locked in.');
@@ -47,6 +59,7 @@ test('locks and restores a zero guess, then reopens and reveals the score at UTC
 
   act(() => jest.advanceTimersByTime(2000));
   expect(screen.getByLabelText('Username').value).toBe('Ada');
+  expect(screen.getByRole('slider').value).toBe('0');
   await screen.findByText('You placed 1 of 1');
   expect(screen.getByText('Right on target')).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Share score' })).toBeTruthy();

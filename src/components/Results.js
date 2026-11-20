@@ -1,4 +1,5 @@
 import { formatDay, formatGuess } from '../utils';
+import { FiBarChart2 } from 'react-icons/fi';
 import { Share } from './Share';
 
 function NumberLine({ markers }) {
@@ -29,11 +30,18 @@ export default function Results({ result, day, error, onRetry }) {
 
   return (
     <section className="card results-card" aria-labelledby="results-title">
-      <div className="card-meta"><time dateTime={day}>{formatDay(day)}</time></div>
-      <h2 id="results-title">Yesterday’s results</h2>
+      <header className="results-header">
+        <h2 id="results-title">Yesterday’s results</h2>
+        <time className="card-meta" dateTime={day}>{formatDay(day)}</time>
+      </header>
       {error ? <div className="results-status"><p>{error}</p><button className="secondary-button" onClick={onRetry}>Try again</button></div>
         : !result ? <p className="results-status" role="status">Loading results…</p>
-        : !result.numberOfPlayers ? <p className="results-status">No guesses were submitted yesterday.</p>
+        : !result.numberOfPlayers ? (
+          <div className="results-status empty-results">
+            <FiBarChart2 aria-hidden="true" />
+            <p>No guesses were submitted yesterday.</p>
+          </div>
+        )
         : (
           <>
             {played ? (

@@ -76,23 +76,28 @@ export default function App() {
 
       <div className="game-layout">
         <section className="card play-card" aria-labelledby="play-title">
-          <div className="card-meta"><FiClock aria-hidden="true" /> {entry ? 'Next round in' : 'Round closes in'}
-            <CountdownTimer now={now} deadline={nextRound} />
-          </div>
-          <h1 id="play-title">{entry ? 'Guess locked in.' : 'Outsmart the crowd'}</h1>
-          {entry ? (
-            <div className="locked-guess" role="status">
-              <FiCheck aria-hidden="true" />
-              <div><strong>{entry.guess == null ? 'Entry confirmed' : formatGuess(entry.guess)}</strong>
-                <span>Playing as {entry.username}. Results unlock at midnight UTC.</span></div>
+          <div className="play-header">
+            <div className="card-meta round-clock"><FiClock aria-hidden="true" /> {entry ? 'Next round in' : 'Round closes in'}
+              <CountdownTimer now={now} deadline={nextRound} />
             </div>
-          ) : (
-            <>
-              <p className="intro">Pick a number from 0 to 100. Closest to two-thirds of today’s average wins.</p>
-              <p className="example">If the average is <b>60</b>, the target is <b>40</b>.</p>
+            <h1 id="play-title">{entry ? 'Guess locked in.' : 'Can you outwit the crowd?'}</h1>
+            {!entry && (
+              <p className="intro">Pick a number from 0 to 100. Closest to two-thirds of today’s average wins.
+                <span className="example">If the average is <b>60</b>, the target is <b>40</b>.</span>
+              </p>
+            )}
+          </div>
+          <div className="play-body">
+            {entry ? (
+              <div className="locked-guess" role="status">
+                <FiCheck aria-hidden="true" />
+                <div><strong>{entry.guess == null ? 'Entry confirmed' : formatGuess(entry.guess)}</strong>
+                  <span>Playing as {entry.username}. Results unlock at midnight UTC.</span></div>
+              </div>
+            ) : (
               <GameForm key={day} onSubmit={submitGuess} initialUsername={getLastUsername(entries, day)} />
-            </>
-          )}
+            )}
+          </div>
         </section>
 
         <div className="round-summary">
