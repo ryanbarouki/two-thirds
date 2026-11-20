@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import axios from 'axios';
 import App from './App';
+import { InviteFriends } from './components/Share';
 
 jest.mock('axios', () => ({ post: jest.fn() }));
 
@@ -34,6 +35,7 @@ test('locks and restores a zero guess, then reopens and reveals the score at UTC
 
   const { unmount } = render(<App />);
   await screen.findByText('No guesses were submitted yesterday.');
+  expect(screen.queryByRole('button', { name: 'Copy invite link' })).toBeNull();
   const scale = screen.getByRole('slider');
   const guessInput = screen.getByLabelText('Your guess');
   expect(scale.value).toBe('0');
@@ -50,6 +52,7 @@ test('locks and restores a zero guess, then reopens and reveals the score at UTC
   fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'Ada' } });
   fireEvent.click(screen.getByRole('button', { name: 'Lock in my guess' }));
   await screen.findByText('Guess locked in.');
+  expect(screen.getByRole('button', { name: 'Copy invite link' })).toBeTruthy();
   expect(JSON.parse(localStorage.getItem('usernames'))['2026-11-20']).toEqual({ username: 'Ada', guess: 0 });
 
   unmount();
@@ -64,4 +67,22 @@ test('locks and restores a zero guess, then reopens and reveals the score at UTC
   expect(screen.getByText('Right on target')).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Share score' })).toBeTruthy();
   expect(axios.post).toHaveBeenLastCalledWith(expect.stringContaining('previous-results'), { username: 'Ada' }, expect.anything());
+});
+
+test('shares the game URL and a challenge through the native share sheet', async () => {
+  const original = Object.getOwnPropertyDescriptor(navigator, 'share');
+  const share = jest.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'share', { configurable: true, value: share });
+  try {
+    render(<InviteFriends />);
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Invite friends' })));
+    expect(share).toHaveBeenCalledWith({
+      title: 'Two Thirds',
+      text: 'I just played Two Thirds. Can you outwit the crowd?',
+      url: window.location.origin + window.location.pathname,
+    });
+  } finally {
+    if (original) Object.defineProperty(navigator, 'share', original);
+    else delete navigator.share;
+  }
 });

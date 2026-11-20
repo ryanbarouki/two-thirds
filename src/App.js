@@ -4,6 +4,7 @@ import { FiClock, FiLock } from 'react-icons/fi';
 import GameForm from './components/GameForm';
 import Leaderboard from './components/Leaderboard';
 import Results from './components/Results';
+import { InviteFriends } from './components/Share';
 import CountdownTimer from './components/CountdownTimer';
 import { useRoundClock } from './hooks/useCountdown';
 import { getEntry, getLastUsername, loadEntries, saveEntry } from './save_local';
@@ -95,14 +96,17 @@ export default function App() {
           </div>
           <div className="play-body">
             {entry ? (
-              <div className="locked-guess" role="status">
-                <FiLock aria-hidden="true" />
-                <div><strong>{entry.guess == null ? 'Entry confirmed' : formatGuess(entry.guess)}</strong>
-                  <span>Playing as {entry.username}</span></div>
-                <div className="receipt-clock">
-                  <span>Results in</span><CountdownTimer now={now} deadline={nextRound} />
+              <>
+                <div className="locked-guess" role="status">
+                  <FiLock aria-hidden="true" />
+                  <div><strong>{entry.guess == null ? 'Entry confirmed' : formatGuess(entry.guess)}</strong>
+                    <span>Playing as {entry.username}</span></div>
+                  <div className="receipt-clock">
+                    <span>Results in</span><CountdownTimer now={now} deadline={nextRound} />
+                  </div>
                 </div>
-              </div>
+                <InviteFriends />
+              </>
             ) : (
               <GameForm key={day} onSubmit={submitGuess} initialUsername={getLastUsername(entries, day)} />
             )}
