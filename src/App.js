@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { FiClock, FiLock } from 'react-icons/fi';
+import { FiClock, FiLock, FiUsers } from 'react-icons/fi';
 import GameForm from './components/GameForm';
 import Leaderboard from './components/Leaderboard';
 import Results from './components/Results';
@@ -23,7 +23,10 @@ export default function App() {
   const [entries, setEntries] = useState(loadEntries);
   const [results, setResults] = useState(null);
   const [attempt, setAttempt] = useState(0);
+  const [roundCount, setRoundCount] = useState(null);
+  const [countRefresh, setCountRefresh] = useState(0);
   const entry = getEntry(entries, day);
+  const guessCount = roundCount?.day === day ? roundCount.count : null;
   const previousUsername = getEntry(entries, resultsDay)?.username ?? '';
   const currentResults = results?.day === resultsDay && results.username === previousUsername &&
     results.attempt === attempt ? results : null;
@@ -57,12 +60,27 @@ export default function App() {
     return () => controller.abort();
   }, [resultsDay, previousUsername, attempt]);
 
+  useEffect(() => {
+    const url = endpoint('round-count');
+    if (!url) return;
+
+    const controller = new AbortController();
+    axios.get(url, { signal: controller.signal, timeout: 10000 }).then(({ data }) => {
+      if (controller.signal.aborted || data.day !== day || !Number.isSafeInteger(data.count) || data.count < 0) return;
+      setRoundCount(previous => previous?.day === day && previous.count > data.count ? previous : data);
+    }).catch(() => {
+      // A temporarily unavailable count should not interrupt play.
+    });
+    return () => controller.abort();
+  }, [day, countRefresh]);
+
   const submitGuess = async ({ username, guess, requestId }) => {
     const url = endpoint('submit-guess');
     if (!url) throw new Error('The game server is not configured.');
     try {
       const { data } = await axios.post(url, { username, guess, day, requestId }, { timeout: 10000 });
       setEntries(saveEntry(data.day, { username, guess }));
+      setCountRefresh(value => value + 1);
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Could not confirm your guess. Please try again.');
     }
@@ -95,6 +113,12 @@ export default function App() {
             )}
           </div>
           <div className="play-body">
+            {guessCount !== null && (
+              <p className="round-count" role="status">
+                <FiUsers aria-hidden="true" />
+                {guessCount.toLocaleString()} {guessCount === 1 ? 'guess' : 'guesses'} so far
+              </p>
+            )}
             {entry ? (
               <>
                 <div className="locked-guess" role="status">

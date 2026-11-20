@@ -39,6 +39,7 @@ Resources:
               - dynamodb:Scan
               - dynamodb:PutItem
               - dynamodb:GetItem
+              - dynamodb:UpdateItem
               Resource: !GetAtt TwoThirdsTable.Arn
       Environment:
         Variables:
@@ -49,6 +50,29 @@ Resources:
           Properties:
             Path: /submit-guess
             Method: post
+
+  GetRoundCountFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: index.getRoundCount
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:Scan
+              Resource: !GetAtt TwoThirdsTable.Arn
+      Environment:
+        Variables:
+          GUESSES_TABLE_NAME: !Ref TwoThirdsTable
+      Events:
+        RoundCount:
+          Type: Api
+          Properties:
+            Path: /round-count
+            Method: get
 
   GetLeaderboardFunction:
     Type: AWS::Serverless::Function

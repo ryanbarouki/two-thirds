@@ -1,10 +1,12 @@
-const { DynamoDBClient, GetItemCommand, PutItemCommand, ScanCommand } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBClient, GetItemCommand, PutItemCommand, ScanCommand, TransactWriteItemsCommand } = require('@aws-sdk/client-dynamodb');
+const { setTimeout: delay } = require('node:timers/promises');
 
 const db = new DynamoDBClient({});
 const TableName = process.env.GUESSES_TABLE_NAME || 'TwoThirdsGuesses';
 const usernamePattern = /^[a-zA-Z0-9]{1,32}$/;
 const requestIdPattern = /^[a-f0-9-]{36}$/i;
 const dayString = date => date.toISOString().slice(0, 10);
+const countKey = day => ({ timestamp: { S: 'ROUNDCOUNT#' + day } });
 
 function reply(statusCode, body) {
   return {
@@ -48,6 +50,46 @@ async function hasLegacyEntry(day, username) {
   return false;
 }
 
+async function readItem(Key) {
+  const { Item } = await db.send(new GetItemCommand({ TableName, Key, ConsistentRead: true }));
+  return Item;
+}
+
+async function ensureRoundCount(day) {
+  const Key = countKey(day);
+  const existing = await readItem(Key);
+  if (existing) return Number(existing.count.N);
+
+  // Every new writer waits for this seed, so the baseline includes only preexisting guesses.
+  const count = (await loadRoundEntries(day)).length;
+  try {
+    await db.send(new PutItemCommand({
+      TableName,
+      Item: { ...Key, count: { N: String(count) } },
+      ConditionExpression: 'attribute_not_exists(#key)',
+      ExpressionAttributeNames: { '#key': 'timestamp' },
+    }));
+    return count;
+  } catch (error) {
+    if (error.name !== 'ConditionalCheckFailedException') throw error;
+    const seeded = await readItem(Key);
+    if (!seeded) throw error;
+    return Number(seeded.count.N);
+  }
+}
+
+exports.getRoundCount = async () => {
+  const day = dayString(new Date());
+  try {
+    const response = reply(200, { day, count: await ensureRoundCount(day) });
+    response.headers['Cache-Control'] = 'no-store';
+    return response;
+  } catch (error) {
+    console.error('Could not load the round count', error);
+    return reply(503, { message: 'Could not load the round count.' });
+  }
+};
+
 exports.submitGuess = async event => {
   const body = parseBody(event);
   if (!body) return reply(400, { message: 'Invalid submission.' });
@@ -73,37 +115,57 @@ exports.submitGuess = async event => {
   const Key = { timestamp: { S: day + '#' + username } };
   try {
     if (await hasLegacyEntry(day, username)) return duplicate();
-    if (dayString(new Date()) !== day) return closed();
-    await db.send(new PutItemCommand({
-      TableName,
-      Item: {
-        ...Key,
-        username: { S: username },
-        guess: { N: String(guess) },
-        submittedAt: { S: new Date().toISOString() },
-        ...(requestId ? { requestId: { S: requestId } } : {}),
+    await ensureRoundCount(day);
+    const transaction = new TransactWriteItemsCommand({ TransactItems: [
+      {
+        Put: {
+          TableName,
+          Item: {
+            ...Key,
+            username: { S: username },
+            guess: { N: String(guess) },
+            submittedAt: { S: new Date().toISOString() },
+            ...(requestId ? { requestId: { S: requestId } } : {}),
+          },
+          ConditionExpression: 'attribute_not_exists(#key)',
+          ExpressionAttributeNames: { '#key': 'timestamp' },
+        },
       },
-      ConditionExpression: 'attribute_not_exists(#key)',
-      ExpressionAttributeNames: { '#key': 'timestamp' },
-    }));
-    return success();
-  } catch (error) {
-    if (error.name === 'ConditionalCheckFailedException') {
-      if (!requestId) return duplicate();
+      {
+        Update: {
+          TableName,
+          Key: countKey(day),
+          UpdateExpression: 'ADD #count :one',
+          ConditionExpression: 'attribute_exists(#count)',
+          ExpressionAttributeNames: { '#count': 'count' },
+          ExpressionAttributeValues: { ':one': { N: '1' } },
+        },
+      },
+    ] });
+    for (let attempt = 0; ; attempt++) {
+      if (dayString(new Date()) !== day) return closed();
       try {
-        const { Item } = await db.send(new GetItemCommand({ TableName, Key, ConsistentRead: true }));
-        return Item?.requestId?.S === requestId && Number(Item?.guess?.N) === guess ? success() : duplicate();
-      } catch (readError) {
-        console.error('Could not confirm a submitted guess', readError);
+        await db.send(transaction);
+        return success();
+      } catch (error) {
+        if (error.name !== 'TransactionCanceledException') throw error;
+        const entry = await readItem(Key);
+        if (entry) {
+          return requestId && entry.requestId?.S === requestId && Number(entry.guess.N) === guess
+            ? success() : duplicate();
+        }
+        const conflict = error.CancellationReasons?.some(reason => reason.Code === 'TransactionConflict');
+        if (!conflict || attempt === 2) throw error;
+        await delay(30 * (attempt + 1) + Math.random() * 50);
       }
-    } else {
-      console.error('Could not save a guess', error);
     }
+  } catch (error) {
+    console.error('Could not save a guess', error);
     return reply(503, { message: 'Could not confirm your guess. Please try again.' });
   }
 };
 
-async function getRoundResults(day, username) {
+async function loadRoundEntries(day) {
   const entriesByUsername = new Map();
   for await (const items of scanPages('begins_with(#key, :legacy) OR begins_with(#key, :current)', {
     ':legacy': { S: day + 'T' },
@@ -121,7 +183,11 @@ async function getRoundResults(day, username) {
     }
   }
 
-  const entries = [...entriesByUsername.values()];
+  return [...entriesByUsername.values()];
+}
+
+async function getRoundResults(day, username) {
+  const entries = await loadRoundEntries(day);
   const numberOfPlayers = entries.length;
   if (!numberOfPlayers) {
     return {

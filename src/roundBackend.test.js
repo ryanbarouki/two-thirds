@@ -4,9 +4,10 @@ jest.mock('@aws-sdk/client-dynamodb', () => ({
   ScanCommand: class { constructor(input) { this.input = input; this.kind = 'scan'; } },
   PutItemCommand: class { constructor(input) { this.input = input; this.kind = 'put'; } },
   GetItemCommand: class { constructor(input) { this.input = input; this.kind = 'get'; } },
+  TransactWriteItemsCommand: class { constructor(input) { this.input = input; this.kind = 'transaction'; } },
 }), { virtual: true });
 
-const { getPreviousResults, submitGuess } = require('../lambdas/index');
+const { getPreviousResults, getRoundCount, submitGuess } = require('../lambdas/index');
 const event = body => ({ body: JSON.stringify(body) });
 const item = (username, guess, timestamp) => ({ username: { S: username }, guess: { N: String(guess) }, timestamp: { S: timestamp } });
 
@@ -42,18 +43,63 @@ test('rejects invalid guesses and stale rounds before writing', async () => {
   expect(mockSend).not.toHaveBeenCalled();
 });
 
-test('uses a conditional round key and confirms a retried submission', async () => {
-  const requestId = '01234567-0123-0123-0123-0123456789ab';
-  const duplicate = Object.assign(new Error(), { name: 'ConditionalCheckFailedException' });
+test('saves a guess and increments the counter in one transaction', async () => {
   mockSend
     .mockResolvedValueOnce({ Items: [] })
-    .mockRejectedValueOnce(duplicate)
-    .mockResolvedValueOnce({ Item: { guess: { N: '0' }, requestId: { S: requestId } } });
+    .mockResolvedValueOnce({ Item: { count: { N: '2' } } })
+    .mockResolvedValueOnce({});
 
-  const response = await submitGuess(event({ username: 'Ada', guess: 0, day: '2026-11-20', requestId }));
-  expect(response.statusCode).toBe(200);
-  expect(mockSend.mock.calls[1][0].input).toMatchObject({
-    Item: { timestamp: { S: '2026-11-20#Ada' } },
-    ConditionExpression: 'attribute_not_exists(#key)',
+  expect((await submitGuess(event({ username: 'Ada', guess: 0, day: '2026-11-20' }))).statusCode).toBe(200);
+  expect(mockSend.mock.calls.map(([command]) => command.kind)).toEqual(['scan', 'get', 'transaction']);
+  expect(mockSend.mock.calls[2][0].input.TransactItems).toMatchObject([
+    { Put: {
+      Item: { timestamp: { S: '2026-11-20#Ada' } },
+      ConditionExpression: 'attribute_not_exists(#key)',
+    } },
+    { Update: {
+      Key: { timestamp: { S: 'ROUNDCOUNT#2026-11-20' } },
+      UpdateExpression: 'ADD #count :one',
+      ExpressionAttributeValues: { ':one': { N: '1' } },
+    } },
+  ]);
+});
+
+test('confirms an identical retry and rejects a duplicate without another increment', async () => {
+  const requestId = '01234567-0123-0123-0123-0123456789ab';
+  const duplicate = Object.assign(new Error(), { name: 'TransactionCanceledException' });
+  for (let index = 0; index < 2; index++) {
+    mockSend
+      .mockResolvedValueOnce({ Items: [] })
+      .mockResolvedValueOnce({ Item: { count: { N: '1' } } })
+      .mockRejectedValueOnce(duplicate)
+      .mockResolvedValueOnce({ Item: { guess: { N: '0' }, requestId: { S: requestId } } });
+  }
+
+  expect((await submitGuess(event({ username: 'Ada', guess: 0, requestId }))).statusCode).toBe(200);
+  expect((await submitGuess(event({ username: 'Ada', guess: 0 }))).statusCode).toBe(409);
+  expect(mockSend.mock.calls.map(([command]) => command.kind))
+    .toEqual(['scan', 'get', 'transaction', 'get', 'scan', 'get', 'transaction', 'get']);
+});
+
+test('seeds today’s count from existing unique guesses and reads it without rescanning', async () => {
+  mockSend
+    .mockResolvedValueOnce({})
+    .mockResolvedValueOnce({ Items: [
+      item('Ada', 0, '2026-11-20T01:00:00.000Z'),
+      item('Ada', 10, '2026-11-20#Ada'),
+      item('Ben', 30, '2026-11-20#Ben'),
+    ] })
+    .mockResolvedValueOnce({})
+    .mockResolvedValueOnce({ Item: { count: { N: '2' } } });
+
+  for (let index = 0; index < 2; index++) {
+    const response = await getRoundCount();
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['Cache-Control']).toBe('no-store');
+    expect(JSON.parse(response.body)).toEqual({ day: '2026-11-20', count: 2 });
+  }
+  expect(mockSend.mock.calls.map(([command]) => command.kind)).toEqual(['get', 'scan', 'put', 'get']);
+  expect(mockSend.mock.calls[2][0].input.Item).toEqual({
+    timestamp: { S: 'ROUNDCOUNT#2026-11-20' }, count: { N: '2' },
   });
 });

@@ -10,6 +10,6 @@ Run the regression tests with `npm test -- --watchAll=false --runInBand` and bui
 
 ## Backend
 
-The AWS SAM template is in `lambdas/template.yaml`. Release the Lambda changes before the frontend, which reads the round date and leaderboard from `previous-results`. New guesses use one conditional DynamoDB item per UTC day and username. The results handler also reads existing ISO timestamp keys, so historical guesses need no table migration.
+The AWS SAM template is in `lambdas/template.yaml`. Release the Lambda changes before the frontend. The UI reads yesterday’s results from `previous-results` and today’s guess count from `round-count`. New guesses use one conditional DynamoDB item per UTC day and username. Each successful write increments the round counter in the same transaction. The counter’s first access seeds it from any guesses already saved that day. The results handler also reads existing ISO timestamp keys, so historical guesses need no table migration.
 
 Rounds close at 00:00 UTC. Equally close guesses share a rank. A tied round can therefore have placements such as 1, 1, 3.

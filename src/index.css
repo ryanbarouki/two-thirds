@@ -65,6 +65,11 @@ a { color: inherit; }
   border-bottom: 3px solid #ddba70;
 }
 .play-body { padding-top: 22px; }
+.round-count {
+  display: flex; align-items: center; gap: 7px; margin-bottom: 10px;
+  color: var(--signal); font-size: .875rem; font-weight: 700;
+}
+.round-count svg { flex: none; }
 .card-meta.round-clock {
   width: fit-content; border: 1px solid var(--line); border-radius: 6px;
   padding: 6px 9px; background: var(--well); color: var(--muted);

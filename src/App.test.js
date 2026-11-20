@@ -3,7 +3,7 @@ import axios from 'axios';
 import App from './App';
 import { InviteFriends } from './components/Share';
 
-jest.mock('axios', () => ({ post: jest.fn() }));
+jest.mock('axios', () => ({ get: jest.fn(), post: jest.fn() }));
 
 const originalEndpoint = process.env.REACT_APP_API_ENDPOINT;
 
@@ -14,6 +14,7 @@ beforeEach(() => {
   jest.useFakeTimers();
   jest.setSystemTime(new Date('2026-11-20T23:59:58Z'));
   localStorage.clear();
+  axios.get.mockReset();
   axios.post.mockReset();
 });
 
@@ -24,6 +25,11 @@ afterEach(() => {
 });
 
 test('locks and restores a zero guess, then reopens and reveals the score at UTC midnight', async () => {
+  axios.get
+    .mockResolvedValueOnce({ data: { day: '2026-11-20', count: 1 } })
+    .mockResolvedValueOnce({ data: { day: '2026-11-20', count: 2 } })
+    .mockResolvedValueOnce({ data: { day: '2026-11-20', count: 2 } })
+    .mockResolvedValueOnce({ data: { day: '2026-11-21', count: 0 } });
   axios.post
     .mockResolvedValueOnce({ data: emptyRound('2026-11-19') })
     .mockResolvedValueOnce({ data: { day: '2026-11-20' } })
@@ -35,6 +41,7 @@ test('locks and restores a zero guess, then reopens and reveals the score at UTC
 
   const { unmount } = render(<App />);
   await screen.findByText('No guesses were submitted yesterday.');
+  await screen.findByText('1 guess this round');
   expect(screen.queryByRole('button', { name: 'Copy invite link' })).toBeNull();
   const scale = screen.getByRole('slider');
   const guessInput = screen.getByLabelText('Your guess');
@@ -52,6 +59,7 @@ test('locks and restores a zero guess, then reopens and reveals the score at UTC
   fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'Ada' } });
   fireEvent.click(screen.getByRole('button', { name: 'Lock in my guess' }));
   await screen.findByText('Guess locked in.');
+  await screen.findByText('2 guesses this round');
   expect(screen.getByRole('button', { name: 'Copy invite link' })).toBeTruthy();
   expect(JSON.parse(localStorage.getItem('usernames'))['2026-11-20']).toEqual({ username: 'Ada', guess: 0 });
 
@@ -59,10 +67,13 @@ test('locks and restores a zero guess, then reopens and reveals the score at UTC
   render(<App />);
   expect(screen.getByText('Guess locked in.')).toBeTruthy();
   await screen.findByText('No guesses were submitted yesterday.');
+  await screen.findByText('2 guesses this round');
 
   act(() => jest.advanceTimersByTime(2000));
   expect(screen.getByLabelText('Username').value).toBe('Ada');
   expect(screen.getByRole('slider').value).toBe('0');
+  expect(screen.queryByText('2 guesses this round')).toBeNull();
+  await screen.findByText('0 guesses this round');
   await screen.findByText('You placed 1 of 1');
   expect(screen.getByText('Right on target')).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Share score' })).toBeTruthy();
