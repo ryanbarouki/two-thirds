@@ -1,33 +1,17 @@
 import { useEffect, useState } from 'react';
 
-const useCountdown = (targetDate) => {
-  const countDownDate = new Date(targetDate).getTime();
-
-  const [countDown, setCountDown] = useState(
-    countDownDate - new Date().getTime()
-  );
-
+export const useRoundClock = () => {
+  const [now, setNow] = useState(Date.now);
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCountDown(countDownDate - new Date().getTime());
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [countDownDate]);
-
-  return getReturnValues(countDown);
+    const update = () => setNow(Date.now());
+    const interval = setInterval(update, 1000);
+    window.addEventListener('focus', update);
+    document.addEventListener('visibilitychange', update);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', update);
+      document.removeEventListener('visibilitychange', update);
+    };
+  }, []);
+  return now;
 };
-
-const getReturnValues = (countDown) => {
-  // calculate time left
-  const days = Math.floor(countDown / (1000 * 60 * 60 * 24));
-  const hours = Math.floor(
-    (countDown % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-  );
-  const minutes = Math.floor((countDown % (1000 * 60 * 60)) / (1000 * 60));
-  const seconds = Math.floor((countDown % (1000 * 60)) / 1000);
-
-  return [days, hours, minutes, seconds];
-};
-
-export { useCountdown };

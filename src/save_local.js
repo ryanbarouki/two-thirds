@@ -1,31 +1,32 @@
-import { DateTime } from "luxon";
+const STORAGE_KEY = 'usernames';
+let cachedEntries = {};
 
-export const loadUsernames = () => {
-    const storedUsernames = localStorage.getItem("usernames");
-    return storedUsernames != null ? JSON.parse(storedUsernames) : {};
+export const loadEntries = () => {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return { ...stored, ...cachedEntries };
+  } catch {
+    return cachedEntries;
+  }
 };
 
-export const saveUsername = (dayString, username) => {
-    const allUsernames = loadUsernames();
-    localStorage.setItem(
-        "usernames",
-        JSON.stringify({
-            ...allUsernames,
-            [dayString]: username,
-        })
-    );
+export const getEntry = (entries, day) => {
+  const entry = entries[day];
+  return typeof entry === 'string' ? { username: entry, guess: null } : entry;
 };
 
-export const getYesterdaysUsername = () => {
-    const yesterday = DateTime.now().minus({days: 1}).toFormat("yyyy-MM-dd");
-    return loadUsernames()[yesterday] ?? '';
+export const getLastUsername = (entries, day) => {
+  const latest = Object.keys(entries).filter(key => key <= day).sort().pop();
+  return getEntry(entries, latest)?.username ?? '';
 };
 
-export const getTodaysUsername = () => {
-    const today = DateTime.now().toFormat("yyyy-MM-dd");
-    return loadUsernames()[today] ?? '';
-};
-
-export const getDayString = () => {
-  return DateTime.now().toFormat("yyyy-MM-dd");
+export const saveEntry = (day, entry) => {
+  const entries = { ...loadEntries(), [day]: entry };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    cachedEntries = {};
+  } catch {
+    cachedEntries = entries;
+  }
+  return entries;
 };

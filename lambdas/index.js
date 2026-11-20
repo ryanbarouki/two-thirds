@@ -1,173 +1,177 @@
-const AWS = require('aws-sdk');
+const { DynamoDBClient, GetItemCommand, PutItemCommand, ScanCommand } = require('@aws-sdk/client-dynamodb');
 
-const dynamoDb = new AWS.DynamoDB.DocumentClient();
-const GUESS_TABLE_NAME = 'TwoThirdsGuesses';
+const db = new DynamoDBClient({});
+const TableName = process.env.GUESSES_TABLE_NAME || 'TwoThirdsGuesses';
+const usernamePattern = /^[a-zA-Z0-9]{1,32}$/;
+const requestIdPattern = /^[a-f0-9-]{36}$/i;
+const dayString = date => date.toISOString().slice(0, 10);
 
-exports.submitGuess = async (event) => {
-  const { username, guess } = JSON.parse(event.body);
-
-  // Generate date string for today
-  const today = new Date();
-  const todayDateString = today.toISOString().split('T')[0];
-
-  // Check if the user has already made a guess today
-  const checkParams = {
-    TableName: GUESS_TABLE_NAME,
-    FilterExpression: 'begins_with(#ts, :today) AND username = :username',
-    ExpressionAttributeNames: {
-      '#ts': 'timestamp',
-    },
-    ExpressionAttributeValues: {
-      ':today': todayDateString,
-      ':username': username,
-    },
-  };
-
-  const checkResult = await dynamoDb.scan(checkParams).promise();
-
-  // If the user has already made a guess today, return an error message
-  if (checkResult.Items.length > 0) {
-    return {
-      statusCode: 400,
-      headers: {
-        "Access-Control-Allow-Origin": "*", // Or specify your frontend domain
-        "Access-Control-Allow-Credentials": true,
-      },
-      body: JSON.stringify({ message: 'That username is taken!' }),
-    };
-  }
-
-  // If the user has not made a guess today, store the new guess
-  const params = {
-    TableName: GUESS_TABLE_NAME,
-    Item: { username, guess, timestamp: new Date().toISOString() },
-  };
-
-  await dynamoDb.put(params).promise();
-
+function reply(statusCode, body) {
   return {
-    statusCode: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "*", // Or specify your frontend domain
-      "Access-Control-Allow-Credentials": true,
-    },
-    body: JSON.stringify({ message: 'Guess submitted successfully' }),
+    statusCode,
+    headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
   };
-};
+}
 
-
-exports.getLeaderboard = async (event) => {
-  // Query DynamoDB for leaderboard data
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayString = yesterday.toISOString().split('T')[0];
-
-  const params = {
-    TableName: GUESS_TABLE_NAME,
-    FilterExpression: 'begins_with(#ts, :yesterday)',
-    ExpressionAttributeNames: {
-      '#ts': 'timestamp',
-    },
-    ExpressionAttributeValues: {
-      ':yesterday': yesterdayString,
-    },
-  };
-
+function parseBody(event) {
   try {
-    const data = await dynamoDb.scan(params).promise();
-    const guessItems = data.Items;
+    return JSON.parse(event.body) ?? {};
+  } catch {
+    return null;
+  }
+}
 
-    const averageGuess = guessItems.length > 0 ? guessItems.reduce((total, item) => total + item.guess, 0) / guessItems.length : null;
-    const target = averageGuess ? averageGuess * (2 / 3) : null;
+async function* scanPages(filter, values) {
+  let cursor;
+  do {
+    const page = await db.send(new ScanCommand({
+      TableName,
+      ConsistentRead: true,
+      FilterExpression: filter,
+      ExpressionAttributeNames: { '#key': 'timestamp' },
+      ExpressionAttributeValues: values,
+      ExclusiveStartKey: cursor,
+    }));
+    yield page.Items ?? [];
+    cursor = page.LastEvaluatedKey;
+  } while (cursor);
+}
 
-    guessItems.forEach(item => {
-      item.distance = Math.abs(target - item.guess);
-    });
+async function hasLegacyEntry(day, username) {
+  for await (const items of scanPages('begins_with(#key, :prefix) AND username = :username', {
+    ':prefix': { S: day + 'T' },
+    ':username': { S: username },
+  })) {
+    if (items.length) return true;
+  }
+  return false;
+}
 
-    // Sort users by their distance to the target, in ascending order
-    guessItems.sort((a, b) => a.distance - b.distance);
+exports.submitGuess = async event => {
+  const body = parseBody(event);
+  if (!body) return reply(400, { message: 'Invalid submission.' });
 
-    // Extract leaderboard information (top 10)
-    const leaderboard = guessItems.slice(0, 10).map(item => ({ username: item.username, guess: item.guess, distance: item.distance }));
+  const { username, guess, day: requestedDay, requestId } = body;
+  if (typeof username !== 'string' || !usernamePattern.test(username)) {
+    return reply(400, { message: 'Use up to 32 letters or numbers for your username.' });
+  }
+  if (!Number.isFinite(guess) || guess < 0 || guess > 100 || guess !== Number(guess.toFixed(2))) {
+    return reply(400, { message: 'Enter a number from 0 to 100 with up to two decimal places.' });
+  }
+  if (requestId !== undefined && (typeof requestId !== 'string' || !requestIdPattern.test(requestId))) {
+    return reply(400, { message: 'Invalid submission.' });
+  }
 
-    return {
-      statusCode: 200,
-      headers: {
-        "Access-Control-Allow-Origin": "*", // Or specify your frontend domain
-        "Access-Control-Allow-Credentials": true,
+  const day = dayString(new Date());
+  const closed = () => reply(409, { message: 'That round has closed. Submit a guess for the new round.' });
+  const duplicate = () => reply(409, { message: 'That username already has a guess this round.' });
+  const success = () => reply(200, { day, message: 'Guess submitted successfully' });
+  if (requestedDay !== undefined && requestedDay !== day) return closed();
+
+  // New entries use a stable key. Older entries retain their original ISO timestamp keys.
+  const Key = { timestamp: { S: day + '#' + username } };
+  try {
+    if (await hasLegacyEntry(day, username)) return duplicate();
+    if (dayString(new Date()) !== day) return closed();
+    await db.send(new PutItemCommand({
+      TableName,
+      Item: {
+        ...Key,
+        username: { S: username },
+        guess: { N: String(guess) },
+        submittedAt: { S: new Date().toISOString() },
+        ...(requestId ? { requestId: { S: requestId } } : {}),
       },
-      body: JSON.stringify(leaderboard),
-    };
+      ConditionExpression: 'attribute_not_exists(#key)',
+      ExpressionAttributeNames: { '#key': 'timestamp' },
+    }));
+    return success();
   } catch (error) {
-    return {
-      statusCode: 500,
-      headers: {
-        "Access-Control-Allow-Origin": "*", // Or specify your frontend domain
-        "Access-Control-Allow-Credentials": true,
-      },
-      body: JSON.stringify({ error: 'Could not retrieve leaderboard ' + error }),
-    };
+    if (error.name === 'ConditionalCheckFailedException') {
+      if (!requestId) return duplicate();
+      try {
+        const { Item } = await db.send(new GetItemCommand({ TableName, Key, ConsistentRead: true }));
+        return Item?.requestId?.S === requestId && Number(Item?.guess?.N) === guess ? success() : duplicate();
+      } catch (readError) {
+        console.error('Could not confirm a submitted guess', readError);
+      }
+    } else {
+      console.error('Could not save a guess', error);
+    }
+    return reply(503, { message: 'Could not confirm your guess. Please try again.' });
   }
 };
 
-exports.getPreviousResults = async (event) => {
-  // Parse the username from the event body
-  const { username } = JSON.parse(event.body);
-
-  // Generate date string for yesterday
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayDateString = yesterday.toISOString().split('T')[0];
-
-  // Scan the entire table and filter items based on the 'timestamp' attribute
-  const params = {
-    TableName: GUESS_TABLE_NAME,
-    FilterExpression: 'begins_with(#ts, :yesterday)',
-    ExpressionAttributeNames: {
-      '#ts': 'timestamp',
-    },
-    ExpressionAttributeValues: {
-      ':yesterday': yesterdayDateString,
-    },
-  };
-
-  const result = await dynamoDb.scan(params).promise();
-  const userGuess = result.Items.length > 0 ? result.Items.find(item => item.username === username)?.guess || null : null;
-  const averageGuess = result.Items.length > 0 ? result.Items.reduce((a, b) => a + b.guess, 0) / result.Items.length : null;
-  const target = averageGuess ? averageGuess * 2 / 3 : null;
-
-  // Find the user guess that is closest to the target and calculate all user ranks
-  let closestGuess = null;
-  let smallestDifference = Infinity;
-  const rankList = [];
-  result.Items.forEach(item => {
-    const difference = Math.abs(item.guess - target);
-    rankList.push({username: item.username, difference: difference});
-    if (difference < smallestDifference) {
-      smallestDifference = difference;
-      closestGuess = item;
+async function getRoundResults(day, username) {
+  const entriesByUsername = new Map();
+  for await (const items of scanPages('begins_with(#key, :legacy) OR begins_with(#key, :current)', {
+    ':legacy': { S: day + 'T' },
+    ':current': { S: day + '#' },
+  })) {
+    for (const item of items) {
+      const name = item.username?.S;
+      const guess = Number(item.guess?.N);
+      if (!name || !Number.isFinite(guess) || guess < 0 || guess > 100) continue;
+      const submittedAt = item.submittedAt?.S ?? item.timestamp.S;
+      const existing = entriesByUsername.get(name);
+      if (!existing || submittedAt < existing.submittedAt) {
+        entriesByUsername.set(name, { username: name, guess, submittedAt });
+      }
     }
+  }
+
+  const entries = [...entriesByUsername.values()];
+  const numberOfPlayers = entries.length;
+  if (!numberOfPlayers) {
+    return {
+      day, numberOfPlayers, leaderboard: [], averageGuess: null, target: null,
+      userGuess: null, userRank: null, userDistance: null, winnerGuess: null,
+    };
+  }
+
+  // Integer hundredths keep mathematically equal distances tied.
+  const sum = entries.reduce((total, entry) => total + Math.round(entry.guess * 100), 0);
+  const scale = 3 * numberOfPlayers;
+  for (const entry of entries) {
+    entry.difference = Math.abs(Math.round(entry.guess * 100) * scale - 2 * sum);
+  }
+  entries.sort((a, b) => a.difference - b.difference || a.username.localeCompare(b.username, 'en'));
+  const ranked = entries.map((entry, index) => {
+    if (entry.difference !== entries[index - 1]?.difference) entry.rank = index + 1;
+    else entry.rank = entries[index - 1].rank;
+    return { username: entry.username, guess: entry.guess, rank: entry.rank, distance: entry.difference / (100 * scale) };
   });
-
-  // Sort the rank list by difference
-  rankList.sort((a, b) => a.difference - b.difference);
-
-  // Find the user's rank
-  const userRank = rankList.findIndex(item => item.username === username) + 1;
-
+  const player = ranked.find(entry => entry.username === username);
   return {
-    statusCode: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "*", // Or specify your frontend domain
-      "Access-Control-Allow-Credentials": true,
-    },
-    body: JSON.stringify({
-      averageGuess: averageGuess?.toFixed(2),
-      target: target?.toFixed(2),
-      userGuess: userGuess ? userGuess.toFixed(2) : null,
-      winnerGuess: closestGuess?.guess.toFixed(2) || null,
-      userRank: userRank || null,
-      numberOfPlayers: result.Items?.length
-    }),
+    day, numberOfPlayers, averageGuess: sum / (100 * numberOfPlayers), target: 2 * sum / (100 * scale),
+    userGuess: player?.guess ?? null, userRank: player?.rank ?? null, userDistance: player?.distance ?? null,
+    winnerGuess: ranked[0].guess, leaderboard: ranked.slice(0, 10),
   };
+}
+
+async function previousResults(username) {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() - 1);
+  return getRoundResults(dayString(date), username);
+}
+
+exports.getPreviousResults = async event => {
+  const body = parseBody(event);
+  if (!body) return reply(400, { message: 'Invalid results request.' });
+  try {
+    return reply(200, await previousResults(body.username));
+  } catch (error) {
+    console.error('Could not load round results', error);
+    return reply(503, { message: 'Could not load round results. Please try again.' });
+  }
+};
+
+exports.getLeaderboard = async () => {
+  try {
+    return reply(200, (await previousResults()).leaderboard);
+  } catch (error) {
+    console.error('Could not load leaderboard', error);
+    return reply(503, { message: 'Could not load leaderboard. Please try again.' });
+  }
 };

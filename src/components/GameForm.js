@@ -1,57 +1,45 @@
-import { useState, useMemo } from 'react';
-import { Form, Label, Input, Button } from '../styles/StyledComponents';
-import { saveUsername, getDayString } from '../save_local';
+import { useRef, useState } from 'react';
 
+export default function GameForm({ onSubmit, initialUsername }) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState('');
+  const request = useRef(null);
 
-const GameForm = ({ onSubmit }) => {
-  // ...
-  const dayString = useMemo(getDayString, []);
-  const [guess, setGuess] = useState('');
-  const [username, setUsername] = useState('');
-  const [disabled, setDisabled] = useState(false);
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (pending) return;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setDisabled(true);
-    if (await onSubmit(username, parseFloat(guess, 10)) === true) {
-      setGuess('');
-      setUsername('');
-      saveUsername(dayString, username);
-    } else {
-      setDisabled(false);
+    const fields = new FormData(event.currentTarget);
+    setPending(true);
+    setError('');
+    try {
+      const username = fields.get('username');
+      const guess = Number(fields.get('guess'));
+      if (request.current?.username !== username || request.current?.guess !== guess) {
+        request.current = { username, guess, requestId: window.crypto?.randomUUID?.() };
+      }
+      await onSubmit(request.current);
+    } catch (failure) {
+      setError(failure.message);
+    } finally {
+      setPending(false);
     }
   };
 
   return (
-    <Form onSubmit={handleSubmit}>
-      <Input
-        type="text"
-        id="username"
-        name="username"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        placeholder='Enter a username'
-        pattern='[a-zA-Z0-9]+'
-        title='Please enter only letters and numbers'
-        disabled={disabled}
-        required
-      />
-      <Input
-        type="number"
-        id="guess"
-        name="guess"
-        value={guess}
-        min="0"
-        max="100"
-        step="0.01"
-        onChange={(e) => setGuess(e.target.value)}
-        placeholder='Enter your guess'
-        disabled={disabled}
-        required
-      />
-      <Button type="submit" disabled={disabled}>Guess!</Button>
-    </Form>
+    <form onSubmit={handleSubmit} className="guess-form">
+      <fieldset disabled={pending}>
+        <label htmlFor="guess">Your guess</label>
+        <div className="guess-input">
+          <input id="guess" name="guess" type="number" inputMode="decimal" min="0" max="100"
+            step="0.01" placeholder="0–100" required />
+        </div>
+        <label htmlFor="username">Username</label>
+        <input id="username" name="username" autoComplete="nickname" defaultValue={initialUsername}
+          pattern="[a-zA-Z0-9]+" maxLength={32} title="Use up to 32 letters or numbers" required />
+        <button className="primary-button" type="submit">{pending ? 'Locking in…' : 'Lock in my guess'}</button>
+      </fieldset>
+      {error && <p className="error" role="alert">{error}</p>}
+    </form>
   );
-};
-
-export default GameForm;
+}

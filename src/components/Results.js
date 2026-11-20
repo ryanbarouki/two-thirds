@@ -1,60 +1,51 @@
-import { SectionTitle } from '../styles/StyledComponents';
-import styled from 'styled-components';
+import { formatDay, formatGuess } from '../utils';
+import { Share } from './Share';
 
-const ResultsTable = styled.table`
-  width: 100%;
-  text-align: left;
-  border-collapse: collapse;
-`;
-
-const TableRow = styled.tr`
-  // Future styling
-`;
-
-const TableData = styled.td`
-  padding: 8px;
-  font-size: 1.2em;
-`;
-
-const TableValue = styled.td`
-  padding: 8px;
-  font-weight: 700;
-  font-size: 1.5em;
-  color: var(--secondary-text);
-`;
-
-
-const Results = ({ previousDayResults }) => {
-  // ...
+function NumberLine({ markers }) {
   return (
-    <div>
-      <SectionTitle>Yesterday's Results</SectionTitle>
-      <ResultsTable>
-        <tbody>
-          <TableRow>
-            <TableData>Average Guess:</TableData>
-            <TableValue>{previousDayResults.averageGuess ?? "🤔"}</TableValue>
-          </TableRow>
-          <TableRow>
-            <TableData>2/3 Average:</TableData>
-            <TableValue>{previousDayResults.target ?? "🤔"}</TableValue>
-          </TableRow>
-          { previousDayResults.userGuess && 
-          <>
-          <TableRow>
-            <TableData><strong>Your Guess:</strong></TableData>
-            <TableValue>{previousDayResults.userGuess ?? "🤔"}</TableValue>
-          </TableRow>
-          <TableRow>
-            <TableData><strong>Your Rank:</strong></TableData>
-            <TableValue>{previousDayResults.userRank ?? "🤔"}</TableValue>
-          </TableRow>
-          </>
-          }
-        </tbody>
-      </ResultsTable>
+    <div className="number-line">
+      <div className="number-track" aria-hidden="true">
+        {markers.map(({ name, value, color }) => (
+          <span key={name} className={'number-marker ' + color} style={{ left: value + '%' }} />
+        ))}
+      </div>
+      <div className="number-ticks" aria-hidden="true"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
+      <dl className="result-legend">
+        {markers.map(({ name, value, color }) => (
+          <div key={name}><dt><span className={'legend-dot ' + color} />{name}</dt><dd>{formatGuess(value)}</dd></div>
+        ))}
+      </dl>
     </div>
   );
-};
+}
 
-export default Results;
+export default function Results({ result, day, error, onRetry }) {
+  const played = result?.userGuess != null;
+  const markers = result?.numberOfPlayers ? [
+    { name: 'Crowd average', value: result.averageGuess, color: 'average' },
+    { name: 'Target', value: result.target, color: 'target' },
+    ...(played ? [{ name: 'Your guess', value: result.userGuess, color: 'your-guess' }] : []),
+  ] : [];
+
+  return (
+    <section className="card results-card" aria-labelledby="results-title">
+      <div className="card-meta"><time dateTime={day}>{formatDay(day)}</time></div>
+      <h2 id="results-title">Yesterday’s results</h2>
+      {error ? <div className="results-status"><p>{error}</p><button className="secondary-button" onClick={onRetry}>Try again</button></div>
+        : !result ? <p className="results-status" role="status">Loading results…</p>
+        : !result.numberOfPlayers ? <p className="results-status">No guesses were submitted yesterday.</p>
+        : (
+          <>
+            {played ? (
+              <div className="placement">
+                <strong>You placed {result.userRank} of {result.numberOfPlayers}</strong>
+                <span>{result.userDistance === 0 ? 'Right on target' : formatGuess(result.userDistance) + ' away from the target'}</span>
+              </div>
+            ) : <p className="player-count">{result.numberOfPlayers} {result.numberOfPlayers === 1 ? 'player' : 'players'}</p>}
+            <NumberLine markers={markers} />
+            {played && <Share day={day} guess={result.userGuess} rank={result.userRank} total={result.numberOfPlayers} />}
+          </>
+        )}
+    </section>
+  );
+}

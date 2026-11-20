@@ -1,27 +1,23 @@
-import CopyToClipboard from "react-copy-to-clipboard";
-import React, { useMemo } from "react";
-import { toast } from "react-toastify";
-import { DateTime } from "luxon";
-import { Button } from "../styles/StyledComponents";
+import { useState } from 'react';
+import CopyToClipboard from 'react-copy-to-clipboard';
+import { FiShare2 } from 'react-icons/fi';
+import { formatGuess } from '../utils';
 
-const FIRST_DAY_OF_TWOTHIRDS = DateTime.fromFormat('June 29 2023', 'LLLL dd yyyy');
-
-export function Share({guess, rank}) {
-  const shareText = useMemo(() => {
-    const dayString = DateTime.now().toFormat("yyyy-MM-dd", {zone: 'utc'});
-    const currentDate = DateTime.fromFormat(dayString, 'yyyy-MM-dd', {zone: 'utc'});
-    const diffInDays = Math.floor(currentDate.diff(FIRST_DAY_OF_TWOTHIRDS, 'days').toObject().days);
-    let shareString = `#TwoThirds #${diffInDays}\nI guessed ${guess} and ranked #${rank}\nCan you outsmart everyone tomorrow?\nhttps://www.twothirds.app`;
-    return shareString
-  }, [guess, rank]);
+export function Share({ day, guess, rank, total }) {
+  const [status, setStatus] = useState('');
+  const round = 1 + (Date.parse(day) - Date.parse('2023-06-29')) / 86400000;
+  const text = [
+    '#TwoThirds #' + round,
+    'I guessed ' + formatGuess(guess) + ' and placed ' + rank + ' of ' + total + '.',
+    'https://www.twothirds.app',
+  ].join('\n');
 
   return (
-    <CopyToClipboard
-      text={shareText}
-      onCopy={() => toast.success("Copied Results to Clipboard", { autoClose: 2000 })}
-      options={{ format: "text/plain" }}
-    >
-      <Button><span>Share Score</span></Button>
-    </CopyToClipboard>
-  )
+    <div className="share">
+      <CopyToClipboard text={text} onCopy={(_, success) => setStatus(success ? 'Copied!' : 'Could not copy the score.')}>
+        <button className="secondary-button" type="button"><FiShare2 aria-hidden="true" /> Share score</button>
+      </CopyToClipboard>
+      <span role="status">{status}</span>
+    </div>
+  );
 }

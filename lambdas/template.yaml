@@ -2,8 +2,17 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: TwoThirds backend with Lambda functions and DynamoDB
 
-Resources:
+Globals:
+  Function:
+    Runtime: nodejs24.x
+    Timeout: 10
+  Api:
+    Cors:
+      AllowOrigin: "'*'"
+      AllowHeaders: "'Content-Type'"
+      AllowMethods: "'GET,POST,OPTIONS'"
 
+Resources:
   TwoThirdsTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -23,7 +32,14 @@ Resources:
     Properties:
       CodeUri: .
       Handler: index.submitGuess
-      Runtime: nodejs14.x
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+              - dynamodb:Scan
+              - dynamodb:PutItem
+              - dynamodb:GetItem
+              Resource: !GetAtt TwoThirdsTable.Arn
       Environment:
         Variables:
           GUESSES_TABLE_NAME: !Ref TwoThirdsTable
@@ -39,7 +55,12 @@ Resources:
     Properties:
       CodeUri: .
       Handler: index.getLeaderboard
-      Runtime: nodejs14.x
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+              - dynamodb:Scan
+              Resource: !GetAtt TwoThirdsTable.Arn
       Environment:
         Variables:
           GUESSES_TABLE_NAME: !Ref TwoThirdsTable
@@ -55,7 +76,12 @@ Resources:
     Properties:
       CodeUri: .
       Handler: index.getPreviousResults
-      Runtime: nodejs14.x
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+              - dynamodb:Scan
+              Resource: !GetAtt TwoThirdsTable.Arn
       Environment:
         Variables:
           GUESSES_TABLE_NAME: !Ref TwoThirdsTable

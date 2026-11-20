@@ -1,37 +1,21 @@
-import {
-  Table,
-  TableHeader,
-  TableCell,
-  SectionTitle,
-  Label,
-} from '../styles/StyledComponents';
+import { formatGuess } from '../utils';
 
-const Leaderboard = ({ leaderboardData, username, numberOfPlayers }) => {
-  // ...
+export default function Leaderboard({ data, username }) {
   return (
-    <div>
-      <SectionTitle>Yesterday's top 10 players</SectionTitle>
-      <Label>Number of players: <strong>{numberOfPlayers}</strong></Label>
-      <Table>
-        <thead>
-          <tr>
-            <TableHeader>#</TableHeader>
-            <TableHeader>Username</TableHeader>
-            <TableHeader>Guess</TableHeader>
-          </tr>
-        </thead>
+    <section className="card leaderboard" aria-labelledby="leaderboard-title">
+      <h2 id="leaderboard-title">Top guesses</h2>
+      <table aria-labelledby="leaderboard-title">
+        <thead><tr><th scope="col">Rank</th><th scope="col">Player</th><th scope="col">Guess</th></tr></thead>
         <tbody>
-          {leaderboardData.map((entry, index) => (
-            <tr key={index}>
-              <TableCell>{index+1}</TableCell>
-              <TableCell>{entry.username}{entry.username === username ? <strong> (You)</strong> : ""}</TableCell>
-              <TableCell>{entry.guess}</TableCell>
+          {data.map(entry => (
+            <tr key={entry.username} className={entry.username === username ? 'own-row' : undefined}>
+              <td>{entry.rank}</td>
+              <th scope="row">{entry.username}{entry.username === username && <span className="you-tag">You</span>}</th>
+              <td>{formatGuess(entry.guess)}</td>
             </tr>
           ))}
         </tbody>
-      </Table>
-    </div>
+      </table>
+    </section>
   );
-};
-
-export default Leaderboard;
+}
