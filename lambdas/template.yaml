@@ -1,12 +1,25 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: TwoThirds backend with Lambda functions and DynamoDB
+Metadata:
+  AWSToolsMetrics:
+    AWSAgentToolkit: aws-cloudformation@3
+
+Parameters:
+  ReminderSenderEmail:
+    Type: String
+    Default: ''
+    Description: Verified SES From address. Leave blank to disable email reminders.
+
+Conditions:
+  EmailRemindersEnabled: !Not [!Equals [!Ref ReminderSenderEmail, '']]
 
 Globals:
   Function:
     Runtime: nodejs24.x
     Timeout: 10
   Api:
+    AlwaysDeploy: true
     Cors:
       AllowOrigin: "'*'"
       AllowHeaders: "'Content-Type'"
@@ -26,6 +39,83 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
+
+  ResultReminders:
+    Type: AWS::DynamoDB::Table
+    Condition: EmailRemindersEnabled
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: roundDay
+          AttributeType: S
+        - AttributeName: emailKey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: roundDay
+          KeyType: HASH
+        - AttributeName: emailKey
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
+  RegisterResultReminderFunction:
+    Type: AWS::Serverless::Function
+    Condition: EmailRemindersEnabled
+    Properties:
+      CodeUri: .
+      Handler: reminders.register
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: dynamodb:UpdateItem
+              Resource: !GetAtt TwoThirdsTable.Arn
+            - Effect: Allow
+              Action: dynamodb:PutItem
+              Resource: !GetAtt ResultReminders.Arn
+      Environment:
+        Variables:
+          GUESSES_TABLE_NAME: !Ref TwoThirdsTable
+          REMINDERS_TABLE_NAME: !Ref ResultReminders
+      Events:
+        RegisterReminder:
+          Type: Api
+          Properties:
+            Path: /result-reminder
+            Method: post
+
+  SendResultReminderFunction:
+    Type: AWS::Serverless::Function
+    Condition: EmailRemindersEnabled
+    Properties:
+      CodeUri: .
+      Handler: reminders.sendRound
+      Timeout: 300
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:Query
+                - dynamodb:UpdateItem
+                - dynamodb:DeleteItem
+              Resource: !GetAtt ResultReminders.Arn
+            - Effect: Allow
+              Action: ses:SendEmail
+              Resource: !Sub 'arn:${AWS::Partition}:ses:${AWS::Region}:${AWS::AccountId}:identity/*'
+              Condition:
+                StringEquals:
+                  ses:FromAddress: !Ref ReminderSenderEmail
+      Environment:
+        Variables:
+          REMINDERS_TABLE_NAME: !Ref ResultReminders
+          REMINDER_SENDER_EMAIL: !Ref ReminderSenderEmail
+      Events:
+        PreviousRound:
+          Type: Schedule
+          Properties:
+            Schedule: cron(5 0 * * ? *)
 
   SubmitGuessFunction:
     Type: AWS::Serverless::Function

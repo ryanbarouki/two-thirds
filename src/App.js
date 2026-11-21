@@ -4,6 +4,7 @@ import { FiClock, FiLock, FiUsers } from 'react-icons/fi';
 import GameForm from './components/GameForm';
 import Leaderboard from './components/Leaderboard';
 import Results from './components/Results';
+import ResultReminder from './components/ResultReminder';
 import { InviteFriends } from './components/Share';
 import CountdownTimer from './components/CountdownTimer';
 import { useRoundClock } from './hooks/useCountdown';
@@ -82,10 +83,21 @@ export default function App() {
     if (!url) throw new Error('The game server is not configured.');
     try {
       const { data } = await axios.post(url, { username, guess, day, requestId }, { timeout: 10000 });
-      setEntries(saveEntry(data.day, { username, guess }));
+      setEntries(saveEntry(data.day, { username, guess, ...(requestId ? { requestId } : {}) }));
       setCountRefresh(value => value + 1);
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Could not confirm your guess. Please try again.');
+    }
+  };
+
+  const requestReminder = async email => {
+    try {
+      await axios.post(endpoint('result-reminder'), {
+        day, username: entry.username, requestId: entry.requestId, email,
+      }, { timeout: 10000 });
+      setEntries(saveEntry(day, { ...entry, reminderRequested: true }));
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Could not set the reminder. Please try again.');
     }
   };
 
@@ -132,6 +144,9 @@ export default function App() {
                     <span>Results in</span><CountdownTimer now={now} deadline={nextRound} />
                   </div>
                 </div>
+                {entry.requestId && process.env.REACT_APP_ENABLE_REMINDERS === 'true' && endpoint('result-reminder') && (
+                  <ResultReminder key={day} requested={entry.reminderRequested} onRequest={requestReminder} />
+                )}
                 <InviteFriends />
               </>
             ) : (

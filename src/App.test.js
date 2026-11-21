@@ -6,6 +6,7 @@ import { InviteFriends } from './components/Share';
 jest.mock('axios', () => ({ get: jest.fn(), post: jest.fn() }));
 
 const originalEndpoint = process.env.REACT_APP_API_ENDPOINT;
+const originalReminders = process.env.REACT_APP_ENABLE_REMINDERS;
 
 const emptyRound = day => ({ day, numberOfPlayers: 0, leaderboard: [] });
 
@@ -21,7 +22,30 @@ beforeEach(() => {
 afterEach(() => {
   if (originalEndpoint === undefined) delete process.env.REACT_APP_API_ENDPOINT;
   else process.env.REACT_APP_API_ENDPOINT = originalEndpoint;
+  if (originalReminders === undefined) delete process.env.REACT_APP_ENABLE_REMINDERS;
+  else process.env.REACT_APP_ENABLE_REMINDERS = originalReminders;
   jest.useRealTimers();
+});
+
+test('sets a one-time email reminder with the saved receipt and keeps the address out of browser storage', async () => {
+  const requestId = '01234567-0123-0123-0123-0123456789ab';
+  process.env.REACT_APP_ENABLE_REMINDERS = 'true';
+  localStorage.setItem('usernames', JSON.stringify({ '2026-11-20': { username: 'Ada', guess: 25, requestId } }));
+  axios.get.mockResolvedValue({ data: { day: '2026-11-20', count: 1 } });
+  axios.post
+    .mockResolvedValueOnce({ data: emptyRound('2026-11-19') })
+    .mockResolvedValueOnce({});
+
+  render(<App />);
+  fireEvent.click(screen.getByText('Email me the results'));
+  fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'ada@example.com' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Set reminder' }));
+  await screen.findByText('Email reminder set for this round.');
+  expect(axios.post).toHaveBeenLastCalledWith(expect.stringContaining('result-reminder'), {
+    day: '2026-11-20', username: 'Ada', requestId, email: 'ada@example.com',
+  }, expect.anything());
+  expect(JSON.parse(localStorage.getItem('usernames'))['2026-11-20'])
+    .toEqual({ username: 'Ada', guess: 25, requestId, reminderRequested: true });
 });
 
 test('locks and restores a zero guess, then reopens and reveals the score at UTC midnight', async () => {

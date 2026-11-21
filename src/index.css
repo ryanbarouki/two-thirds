@@ -186,7 +186,7 @@ p { line-height: 1.55; margin: 0; }
 .guess-playfield p { margin-top: 8px; color: var(--muted); text-align: center; font-size: .875rem; }
 .guess-entry { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; margin-top: 16px; }
 .username-field { display: grid; gap: 6px; }
-.username-field input, .result-lookup-form input {
+.username-field input, .result-lookup-form input, .result-reminder input {
   width: 100%; min-height: 46px; padding: 9px 12px; border: 1px solid var(--line);
   border-radius: 8px; background: var(--well); color: var(--text);
 }
@@ -216,6 +216,17 @@ p { line-height: 1.55; margin: 0; }
 .locked-guess > div { min-width: 0; }
 .receipt-clock { margin-left: auto; padding-left: 12px; border-left: 1px solid var(--line); }
 .receipt-clock span { margin-bottom: 4px; font-size: .875rem; }
+.result-reminder { margin-top: 14px; }
+.result-reminder summary { cursor: pointer; color: var(--signal); font-weight: 700; }
+.result-reminder form {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
+  gap: 6px 8px; margin-top: 8px;
+}
+.result-reminder label, .result-reminder form p { grid-column: 1 / -1; }
+.result-reminder label { font-size: .875rem; font-weight: 600; }
+.result-reminder p { color: var(--muted); font-size: .875rem; }
+.result-reminder > p { display: flex; align-items: center; gap: 8px; }
+.result-reminder p.error { color: var(--rose); }
 .invite { margin-top: 14px; }
 .invite .primary-button { width: 100%; }
 .invite-status { color: var(--muted); font-size: .875rem; }
